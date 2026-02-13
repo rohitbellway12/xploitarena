@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
 import api from '../api/axios';
-import { Trophy, Calendar, MapPin, ExternalLink, ShieldCheck } from 'lucide-react';
+import { Trophy, Calendar, ExternalLink, ShieldCheck } from 'lucide-react';
 
 export default function EventsPage() {
   const [events, setEvents] = useState<any[]>([]);

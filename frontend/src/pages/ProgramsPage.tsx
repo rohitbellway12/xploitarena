@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
 import api from '../api/axios';
-import { Search, MapPin, DollarSign, ArrowRight, Lock, Globe } from 'lucide-react';
+import { Search, DollarSign, ArrowRight, Lock, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface Program {
