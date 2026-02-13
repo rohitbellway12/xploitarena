@@ -117,7 +117,7 @@ const login = async (req, res) => {
       data: { loginAttempts: 0, lockedUntil: null }
     });
 
-    const requires2FA = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.mfaEnabled || isUnverified;
+    const requires2FA = user.mfaEnabled || isUnverified;
 
     if (requires2FA) {
       let otp = user.twoFactorCode;
