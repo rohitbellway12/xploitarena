@@ -52,7 +52,27 @@ export default function Sidebar({ role }: SidebarProps) {
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
-  const links = (role === 'ADMIN' || role === 'SUPER_ADMIN') ? adminLinks : role === 'COMPANY_ADMIN' ? companyLinks : researcherLinks;
+  const triagerLinks = [
+    { name: 'Triage Panel', path: '/triager/dashboard', icon: LayoutDashboard },
+    { name: 'Public Programs', path: '/researcher/programs', icon: Search },
+    { name: 'Settings', path: '/settings', icon: Settings },
+  ];
+
+  const getLinks = () => {
+    switch (role) {
+      case 'ADMIN':
+      case 'SUPER_ADMIN':
+        return adminLinks;
+      case 'COMPANY_ADMIN':
+        return companyLinks;
+      case 'TRIAGER':
+        return triagerLinks;
+      default:
+        return researcherLinks;
+    }
+  };
+
+  const links = getLinks();
 
   return (
     <aside className="w-64 bg-[hsl(var(--bg-card))] border-r border-[hsl(var(--border-subtle))] flex flex-col h-screen sticky top-0 overflow-hidden transition-colors duration-300">

@@ -77,10 +77,10 @@ export default function CreateProgramPage() {
               </label>
               <select
                 {...register('type')}
-                className="w-full bg-[hsl(var(--text-main))]/[0.05] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-[hsl(var(--text-main))] focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
+                className="w-full bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-[hsl(var(--text-main))] focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all cursor-pointer appearance-none"
               >
-                <option value="PUBLIC">Public</option>
-                <option value="PRIVATE">Private</option>
+                <option value="PUBLIC" className="bg-[hsl(var(--bg-card))] text-[hsl(var(--text-main))]">Public</option>
+                <option value="PRIVATE" className="bg-[hsl(var(--bg-card))] text-[hsl(var(--text-main))]">Private</option>
               </select>
             </div>
 

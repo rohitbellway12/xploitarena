@@ -10,6 +10,7 @@ router.put('/:id', protect, authorize('RESEARCHER'), reportController.updateRepo
 router.get('/:id', protect, reportController.getReportById); // Internal isolation in controller
 
 // Company & Triage routes
+router.get('/triage/all', protect, authorize('TRIAGER', 'ADMIN'), reportController.getAllReports);
 router.get('/program/:programId', protect, authorize('COMPANY_ADMIN', 'TRIAGER', 'ADMIN'), reportController.getProgramReports);
 router.put('/:id/status', protect, authorize('COMPANY_ADMIN', 'TRIAGER', 'ADMIN'), reportController.updateReportStatus);
 router.post('/:id/pay', protect, authorize('COMPANY_ADMIN'), reportController.payBounty);

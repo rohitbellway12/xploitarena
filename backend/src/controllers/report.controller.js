@@ -168,6 +168,36 @@ exports.updateReportStatus = async (req, res) => {
   }
 };
 
+// Get all reports for Triage (Admin/Triager only)
+exports.getAllReports = async (req, res) => {
+  try {
+    const { status } = req.query;
+    const where = {};
+    if (status) where.status = status;
+
+    const reports = await prisma.report.findMany({
+      where,
+      include: {
+        program: { select: { name: true } },
+        researcher: { select: { firstName: true, email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const stats = {
+      pending: await prisma.report.count({ where: { status: 'SUBMITTED' } }),
+      triaging: await prisma.report.count({ where: { status: 'TRIAGING' } }),
+      resolved: await prisma.report.count({ where: { status: 'RESOLVED' } }),
+      critical: await prisma.report.count({ where: { severity: 'CRITICAL' } }),
+    };
+
+    res.json({ reports, stats });
+  } catch (error) {
+    console.error('Get All Reports Error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 // Pay Bounty (Deduct from Budget)
 exports.payBounty = async (req, res) => {
   try {

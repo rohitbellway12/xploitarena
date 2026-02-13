@@ -7,6 +7,7 @@ import GitHubCallback from './pages/GitHubCallback';
 import ResearcherDashboard from './pages/ResearcherDashboard';
 import CompanyDashboard from './pages/CompanyDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import TriagerDashboard from './pages/TriagerDashboard';
 import ProgramsPage from './pages/ProgramsPage';
 import CreateProgramPage from './pages/CreateProgramPage';
 import SubmitReportPage from './pages/SubmitReportPage';
@@ -46,6 +47,8 @@ function App() {
             <Route path="/admin/researchers" element={<AdminResearcherList />} />
             <Route path="/admin/companies" element={<AdminCompanyList />} />
             <Route path="/admin/logs" element={<AdminAuditLogs />} />
+            
+            <Route path="/triager/dashboard" element={<TriagerDashboard />} />
             
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/settings" element={<SettingsPage />} />

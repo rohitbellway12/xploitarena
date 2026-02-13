@@ -24,7 +24,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [showMFA, setShowMFA] = useState(false);
   const [mfaUserId, setMfaUserId] = useState<string | null>(null);
-  const [role, setRole] = useState<'RESEARCHER' | 'COMPANY_ADMIN'>('RESEARCHER');
+  const [role, setRole] = useState<'RESEARCHER' | 'COMPANY_ADMIN' | 'TRIAGER'>('RESEARCHER');
 
   const { 
     register: loginRegister, 
@@ -100,6 +100,8 @@ export default function LoginPage() {
       navigate('/admin/dashboard');
     } else if (user.role === 'COMPANY_ADMIN') {
       navigate('/company/dashboard');
+    } else if (user.role === 'TRIAGER') {
+      navigate('/triager/dashboard');
     } else {
       navigate('/researcher/dashboard');
     }
@@ -124,6 +126,12 @@ export default function LoginPage() {
                   className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition-all tracking-widest ${role === 'COMPANY_ADMIN' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-main))]'}`}
                 >
                   ORGANIZATION
+                </button>
+                <button 
+                  onClick={() => setRole('TRIAGER')}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition-all tracking-widest ${role === 'TRIAGER' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-main))]'}`}
+                >
+                  TRIAGER
                 </button>
               </div>
             </div>

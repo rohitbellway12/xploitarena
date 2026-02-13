@@ -73,7 +73,11 @@ const login = async (req, res) => {
 
     // Role validation (if provided by frontend)
     if (role && user.role !== role) {
-      const friendlyRole = user.role === 'RESEARCHER' ? 'Researcher' : 'Organization';
+      let friendlyRole = user.role;
+      if (user.role === 'RESEARCHER') friendlyRole = 'Researcher';
+      else if (user.role === 'COMPANY_ADMIN') friendlyRole = 'Organization';
+      else if (user.role === 'TRIAGER') friendlyRole = 'Triager';
+      
       return res.status(403).json({ message: `This account is registered as a ${friendlyRole}. Please select the correct tab.` });
     }
 

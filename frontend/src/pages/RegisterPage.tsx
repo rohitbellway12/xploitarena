@@ -10,7 +10,7 @@ const registerSchema = z.object({
   lastName: z.string().min(2, 'Last name is too short'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  role: z.enum(['RESEARCHER', 'COMPANY_ADMIN']),
+  role: z.enum(['RESEARCHER', 'COMPANY_ADMIN', 'TRIAGER']),
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -86,10 +86,11 @@ export default function RegisterPage() {
             <label className="block text-[10px] font-black text-[hsl(var(--text-muted))] uppercase tracking-widest mb-1.5 ml-1">Account Type</label>
             <select
               {...register('role')}
-              className="block w-full rounded-2xl border border-[hsl(var(--border-subtle))] bg-[hsl(var(--text-main))]/[0.03] px-4 py-3.5 text-[hsl(var(--text-main))] focus:border-indigo-500/50 focus:bg-[hsl(var(--text-main))]/[0.06] sm:text-sm transition-all outline-none appearance-none"
+              className="block w-full rounded-2xl border border-[hsl(var(--border-subtle))] bg-[hsl(var(--bg-card))] px-4 py-3.5 text-[hsl(var(--text-main))] focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 sm:text-sm transition-all outline-none appearance-none cursor-pointer"
             >
-              <option value="RESEARCHER">Researcher (Hacker)</option>
-              <option value="COMPANY_ADMIN">Company (Program Owner)</option>
+              <option value="RESEARCHER" className="bg-[hsl(var(--bg-card))] text-[hsl(var(--text-main))]">Researcher (Hacker)</option>
+              <option value="COMPANY_ADMIN" className="bg-[hsl(var(--bg-card))] text-[hsl(var(--text-main))]">Company (Program Owner)</option>
+              <option value="TRIAGER" className="bg-[hsl(var(--bg-card))] text-[hsl(var(--text-main))]">Triager (Reviewer)</option>
             </select>
           </div>
 
