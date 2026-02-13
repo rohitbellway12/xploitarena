@@ -1,0 +1,15 @@
+# Database
+DATABASE_URL="postgresql://postgres:Bellway%401234@localhost:5432/xploitarena_db?schema=public"
+
+# JWT
+JWT_SECRET="your-super-secret-and-long-random-string"
+JWT_EXPIRES_IN="7d"
+
+# Redis
+REDIS_URL="redis://localhost:6379"
+
+# Email
+EMAIL_HOST="smtp.gmail.com"
+EMAIL_PORT=587
+EMAIL_USER="rohitbellway12@gmail.com"
+EMAIL_PASS="envhkgxzqaweplbd"
