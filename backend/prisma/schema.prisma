@@ -25,6 +25,7 @@ model User {
   refreshTokens RefreshToken[]
   companyMembers CompanyMember[] @relation("CompanyMembership")
   ownedCompanies CompanyMember[] @relation("CompanyOwner")
+  files          File[]
 
   mfaSecret       String?   @map("mfa_secret")
   mfaEnabled      Boolean   @default(false) @map("mfa_enabled")
@@ -108,8 +109,25 @@ model Report {
   program      Program      @relation(fields: [programId], references: [id])
   researcher   User         @relation("ResearcherReports", fields: [researcherId], references: [id])
   auditLogs    AuditLog[]
+  files        File[]
 
   @@map("reports")
+}
+
+model File {
+  id         String   @id @default(cuid())
+  filename   String
+  path       String   // Path on disk or S3 Key
+  mimetype   String
+  size       Int
+  uploaderId String   @map("uploader_id")
+  reportId   String?  @map("report_id") // Optional, can be linked later
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  uploader   User     @relation(fields: [uploaderId], references: [id])
+  report     Report?  @relation(fields: [reportId], references: [id])
+
+  @@map("files")
 }
 
 model RefreshToken {

@@ -16,6 +16,8 @@ export default function SubmitReportPage() {
   });
   const [submitting, setSubmitting] = useState(false);
 
+  const [file, setFile] = useState<File | null>(null);
+
   useEffect(() => {
     const fetchData = async () => {
       console.log('SubmitReportPage: reportId:', reportId, 'programId:', programId);
@@ -47,14 +49,31 @@ export default function SubmitReportPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
+      let currentReportId = reportId;
+      
+      // 1. Create or Update Report
       if (reportId) {
         await api.put(`/reports/${reportId}`, { ...formData, status });
       } else {
-        await api.post('/reports', { ...formData, programId, status });
+        const res = await api.post('/reports', { ...formData, programId, status });
+        currentReportId = res.data.report.id;
       }
+      
+      // 2. Upload File if selected
+      if (file && currentReportId) {
+        const uploadData = new FormData();
+        uploadData.append('file', file);
+        uploadData.append('reportId', currentReportId);
+        
+        await api.post('/upload', uploadData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
+
       toast.success(status === 'DRAFT' ? 'Draft saved!' : 'Report submitted successfully!');
       navigate('/researcher/dashboard');
     } catch (error: any) {
+      console.error('Submit Error:', error);
       toast.error(error.response?.data?.message || 'Action failed');
     } finally {
       setSubmitting(false);
@@ -122,6 +141,60 @@ export default function SubmitReportPage() {
                 placeholder="Describe the bug, impact, and exact steps to reproduce..."
                 className="w-full bg-[hsl(var(--bg-main))] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-[hsl(var(--text-main))] focus:border-indigo-500 outline-none transition-all font-mono text-sm resize-none placeholder:text-[hsl(var(--text-muted))]/50"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-[hsl(var(--text-main))]">Upload Proof-of-Concept (POC)</label>
+              <div 
+                className={`border-2 border-dashed rounded-xl p-8 transition-all text-center cursor-pointer relative ${
+                  file ? 'border-indigo-500/50 bg-indigo-500/5' : 'border-[hsl(var(--border-subtle))] hover:border-indigo-500/50 hover:bg-[hsl(var(--bg-main))]'
+                }`}
+                onClick={() => document.getElementById('file-upload')?.click()}
+              >
+                <input 
+                  type="file" 
+                  id="file-upload" 
+                  className="hidden" 
+                  accept=".pdf,.jpg,.jpeg,.png,.zip,.txt"
+                  onChange={(e) => {
+                    const selected = e.target.files?.[0];
+                    if (selected) {
+                      if (selected.size > 25 * 1024 * 1024) {
+                        toast.error('File size must be less than 25MB');
+                        return;
+                      }
+                      setFile(selected);
+                    }
+                  }}
+                />
+                <div className="flex flex-col items-center gap-3 text-[hsl(var(--text-muted))]">
+                  <div className={`p-3 rounded-full ${file ? 'bg-indigo-500/20 text-indigo-400' : 'bg-[hsl(var(--text-main))]/5'}`}>
+                    <FileText className={`w-8 h-8 ${file ? 'opacity-100' : 'opacity-50'}`} />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-[hsl(var(--text-main))]">
+                      {file ? file.name : 'Click to upload POC or drag and drop'}
+                    </p>
+                    <p className="text-xs opacity-50 uppercase tracking-widest font-semibold">
+                      {file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'PDF, Images, ZIP, TXT (Max 25MB)'}
+                    </p>
+                  </div>
+                </div>
+                {file && (
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFile(null);
+                    }}
+                    className="absolute top-2 right-2 p-1 hover:bg-red-500/10 text-[hsl(var(--text-muted))] hover:text-red-400 rounded-full transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 

@@ -18,6 +18,8 @@ import AdminCompanyList from './pages/AdminCompanyList';
 import AdminAuditLogs from './pages/AdminAuditLogs';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 const queryClient = new QueryClient();
 
@@ -30,6 +32,8 @@ function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
             <Route path="/auth/github/callback" element={<GitHubCallback />} />
             
             {/* Dashboard Routes */}

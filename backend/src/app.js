@@ -56,6 +56,7 @@ app.use('/api/company', companyRoutes);
 app.use('/api/researcher', researcherRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/upload', require('./routes/upload.routes'));
 
 // ---- Error Handling Middleware (Always at the end) ----
 app.use((err, req, res, next) => {

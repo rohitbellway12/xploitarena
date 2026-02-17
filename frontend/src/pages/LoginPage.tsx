@@ -193,6 +193,11 @@ export default function LoginPage() {
                     className="block w-full rounded-2xl border border-[hsl(var(--border-subtle))] bg-[hsl(var(--text-main))]/[0.03] px-4 py-3.5 text-[hsl(var(--text-main))] placeholder-[hsl(var(--text-muted))]/40 focus:border-indigo-500/50 focus:bg-[hsl(var(--text-main))]/[0.06] sm:text-sm transition-all outline-none"
                   />
                   {loginErrors.password && <p className="mt-1.5 text-[10px] text-rose-500 font-bold uppercase tracking-tight ml-1">{loginErrors.password.message}</p>}
+                  <div className="flex justify-end mt-2">
+                    <a href="/forgot-password" className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold uppercase tracking-widest transition-colors">
+                      Forgot Password?
+                    </a>
+                  </div>
                 </div>
               </div>
 
