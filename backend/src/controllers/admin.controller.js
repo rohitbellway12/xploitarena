@@ -442,12 +442,18 @@ exports.inviteCompany = async (req, res) => {
 
     const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/register-company?token=${invite.token}`;
     
-    await emailService.sendInvitationEmail(email, inviteUrl, req.body.message);
+    try {
+      await emailService.sendInvitationEmail(email, inviteUrl, req.body.message);
+      console.log(`✅ Invitation email sent to ${email}`);
+    } catch (emailErr) {
+      console.error('❌ Invitation email failed (but invite token was created):', emailErr.message);
+      // Don't return error — invitation is saved in DB, admin can resend
+    }
 
-    res.json({ message: 'Invitation sent successfully' });
+    res.json({ message: 'Invitation sent successfully', inviteUrl });
   } catch (error) {
     console.error('Invite Company Error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error', detail: error.message });
   }
 };
 
