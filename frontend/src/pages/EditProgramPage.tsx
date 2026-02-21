@@ -5,7 +5,7 @@ import * as z from 'zod';
 import DashboardLayout from '../layouts/DashboardLayout';
 import api from '../api/axios';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Layers, FileText, Target, Wallet, DollarSign, Clock, Save, Trash2, PauseCircle, PlayCircle, Lock, ChevronLeft, ShieldCheck } from 'lucide-react';
+import { Layers, FileText, Target, Wallet, DollarSign, Clock, Save, Trash2, PauseCircle, PlayCircle, ChevronLeft, ShieldCheck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const programSchema = z.object({

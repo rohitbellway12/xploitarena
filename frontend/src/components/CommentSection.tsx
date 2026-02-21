@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Send, Lock, Eye, EyeOff, User } from 'lucide-react';
+import { Send, Lock, Eye, EyeOff } from 'lucide-react';
 import api from '../api/axios';
 import { toast } from 'react-hot-toast';
 

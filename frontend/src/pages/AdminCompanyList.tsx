@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
-import { ChevronLeft, ChevronRight, Search, ShieldCheck, X, Mail, Calendar, Briefcase, DollarSign, ExternalLink, Send, Shield, UserPlus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, X, Mail, Calendar, Briefcase, DollarSign, ExternalLink, Send, Shield, UserPlus } from 'lucide-react';
 import api from '../api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';

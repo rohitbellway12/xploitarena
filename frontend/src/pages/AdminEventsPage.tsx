@@ -5,13 +5,10 @@ import {
   Calendar, 
   Plus, 
   X, 
-  Search, 
   Edit2, 
   Trash2, 
   CheckCircle2, 
-  AlertCircle,
-  ShieldCheck,
-  Target
+  ShieldCheck
 } from 'lucide-react';
 import api from '../api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,7 +21,7 @@ export default function AdminEventsPage() {
   const [programs, setPrograms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm] = useState('');
   
   // Form State
   const [formData, setFormData] = useState({
