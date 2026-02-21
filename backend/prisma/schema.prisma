@@ -13,19 +13,35 @@ model User {
   passwordHash String   @map("password_hash")
   firstName    String   @map("first_name")
   lastName     String   @map("last_name")
-  role         Role     @default(RESEARCHER)
+  
+  // Base role defines the user's primary identity
+  role         Role     @default(RESEARCHER) 
+  
+  // Link to a dynamic role with specific permissions
+  customRoleId String?  @map("custom_role_id")
+  customRole   CustomRole? @relation(fields: [customRoleId], references: [id])
+  
+  // Team Hierarchy
+  parentId     String?  @map("parent_id")
+  parent       User?    @relation("TeamMembers", fields: [parentId], references: [id])
+  members      User[]   @relation("TeamMembers")
+
   isActive     Boolean  @default(true) @map("is_active")
   isVerified   Boolean  @default(false) @map("is_verified")
+
+  kybStatus    KybStatus @default(UNVERIFIED) @map("kyb_status")
 
   // Relations
   programs     Program[] @relation("CompanyPrograms")
   invitedPrograms Program[] @relation("ProgramInvitations")
   reports      Report[]  @relation("ResearcherReports")
+  triagerReports Report[] @relation("TriagerReports") // Added for assignment
   auditLogs    AuditLog[]
   refreshTokens RefreshToken[]
   companyMembers CompanyMember[] @relation("CompanyMembership")
   ownedCompanies CompanyMember[] @relation("CompanyOwner")
   files          File[]
+  ownedRoles     CustomRole[] @relation("RoleOwner")
 
   mfaSecret       String?   @map("mfa_secret")
   mfaEnabled      Boolean   @default(false) @map("mfa_enabled")
@@ -37,8 +53,18 @@ model User {
   lockedUntil     DateTime? @map("locked_until")
   resetToken      String?   @map("reset_token")
   resetTokenExpires DateTime? @map("reset_token_expires")
+  bookmarks      Bookmark[]
+  createdTeams   ResearcherTeam[] @relation("TeamCreator")
+  teamMemberships ResearcherTeamMember[]
+  comments        Comment[]
+  notifications   Notification[]
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Triager Assignment (for Companies)
+  assignedTriagerId String? @map("assigned_triager_id")
+  assignedTriager   User?   @relation("TriagerAssignments", fields: [assignedTriagerId], references: [id])
+  assignedCompanies User[]  @relation("TriagerAssignments")
 
   @@map("users")
 }
@@ -51,26 +77,89 @@ enum Role {
   SUPER_ADMIN
 }
 
+enum KybStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  key         String   @unique // e.g., "reports:view", "finance:manage"
+  name        String
+  description String?
+  category    String   // e.g., "ADMIN", "COMPANY", "RESEARCHER"
+  
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model CustomRole {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  
+  ownerId     String?  @map("owner_id")
+  owner       User?    @relation("RoleOwner", fields: [ownerId], references: [id])
+  
+  isSystem    Boolean  @default(false) @map("is_system")
+  
+  users       User[]
+  permissions RolePermission[]
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("custom_roles")
+}
+
+model RolePermission {
+  roleId       String @map("role_id")
+  permissionId String @map("permission_id")
+  
+  role         CustomRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
 model Program {
   id          String        @id @default(cuid())
   name        String
   description String
   scope       String        @db.Text
   rules       String?       @db.Text
-  rewards     String        // e.g., "$100 - $5000"
+  rewards     String
   status      ProgramStatus @default(ACTIVE)
   type        ProgramType   @default(PUBLIC)
   companyId   String        @map("company_id")
   budgetTotal Float?        @map("budget_total")
   budgetSpent Float         @default(0) @map("budget_spent")
-  lowBudgetAlertSent Boolean @default(false) @map("low_budget_alert_sent")
+  budgetAlert75Sent  Boolean @default(false) @map("budget_alert_75_sent")
+  budgetAlert90Sent  Boolean @default(false) @map("budget_alert_90_sent")
+  budgetAlert100Sent Boolean @default(false) @map("budget_alert_100_sent")
+  
+  // SLA Targets (in hours)
+  slaFirstResponse Int?     @map("sla_first_response")
+  slaTriage        Int?     @map("sla_triage")
+  slaResolution    Int?     @map("sla_resolution")
+
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
-  // Relations
   company     User          @relation("CompanyPrograms", fields: [companyId], references: [id])
   invitedResearchers User[] @relation("ProgramInvitations")
   reports     Report[]
+  bookmarks   Bookmark[]
+  
+  event       Event?    @relation(fields: [eventId], references: [id])
+  eventId     String?   @map("event_id")
+
+  disclosurePolicy String? @map("disclosure_policy") @db.Text
+  safeHarbor       String? @map("safe_harbor") @default("NONE") // FULL, PARTIAL, NONE
 
   @@map("programs")
 }
@@ -90,26 +179,34 @@ model Report {
   id           String       @id @default(cuid())
   title        String
   description  String       @db.Text
-  asset        String?      // The URL or host affected
-  category     String?      // e.g., SQLi, XSS
+  asset        String?
+  category     String?
   severity     Severity
-  cvss         Float?       // CVSS Score
+  cvss         Float?
   impact       String?      @db.Text
   status       ReportStatus @default(SUBMITTED)
   bountyAmount Float?       @map("bounty_amount")
   programId    String       @map("program_id")
   researcherId String       @map("researcher_id")
+  triagerId    String?      @map("triager_id")
+  teamId       String?      @map("team_id")
   submittedAt  DateTime     @default(now()) @map("submitted_at")
+  firstRespondedAt DateTime? @map("first_responded_at")
   triagedAt    DateTime?    @map("triaged_at")
   resolvedAt   DateTime?    @map("resolved_at")
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
-  // Relations
   program      Program      @relation(fields: [programId], references: [id])
   researcher   User         @relation("ResearcherReports", fields: [researcherId], references: [id])
+  triager      User?        @relation("TriagerReports", fields: [triagerId], references: [id])
+  team         ResearcherTeam? @relation(fields: [teamId], references: [id])
   auditLogs    AuditLog[]
   files        File[]
+  comments     Comment[]
+
+  event        Event?   @relation(fields: [eventId], references: [id])
+  eventId      String?  @map("event_id")
 
   @@map("reports")
 }
@@ -117,11 +214,11 @@ model Report {
 model File {
   id         String   @id @default(cuid())
   filename   String
-  path       String   // Path on disk or S3 Key
+  path       String
   mimetype   String
   size       Int
   uploaderId String   @map("uploader_id")
-  reportId   String?  @map("report_id") // Optional, can be linked later
+  reportId   String?  @map("report_id")
   createdAt  DateTime @default(now()) @map("created_at")
 
   uploader   User     @relation(fields: [uploaderId], references: [id])
@@ -146,7 +243,7 @@ model CompanyMember {
   id        String   @id @default(cuid())
   companyId String   @map("company_id")
   userId    String   @map("user_id")
-  role      String   @default("MEMBER") // ADMIN, MEMBER
+  role      String   @default("MEMBER")
   createdAt DateTime @default(now()) @map("created_at")
 
   company   User     @relation("CompanyOwner", fields: [companyId], references: [id])
@@ -164,11 +261,29 @@ model Event {
   endDate     DateTime @map("end_date")
   scope       String?  @db.Text
   rewards     String?
+  type        EventType @default(LIVE_HACKING)
   isPrivate   Boolean  @default(false) @map("is_private")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  programs    Program[]
+  reports     Report[]
+
   @@map("events")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  text      String   @db.Text
+  isInternal Boolean @default(false) @map("is_internal") // Only visible to Triage/Company
+  reportId  String   @map("report_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  report    Report   @relation(fields: [reportId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("comments")
 }
 
 enum Severity {
@@ -176,6 +291,11 @@ enum Severity {
   MEDIUM
   HIGH
   CRITICAL
+}
+
+enum EventType {
+  LIVE_HACKING
+  PENTEST
 }
 
 enum ReportStatus {
@@ -196,16 +316,85 @@ enum ReportStatus {
 
 model AuditLog {
   id        String   @id @default(cuid())
-  action    String   // e.g., "AUTH_LOGIN", "REPORT_STATUS_CHANGE"
+  action    String
   details   String?  @db.Text
   ipAddress String?  @map("ip_address")
   userId    String?  @map("user_id")
   reportId  String?  @map("report_id")
   createdAt DateTime @default(now()) @map("created_at")
 
-  // Relations
   user      User?    @relation(fields: [userId], references: [id])
   report    Report?  @relation(fields: [reportId], references: [id])
 
   @@map("audit_logs")
+}
+
+model Invitation {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  token     String   @unique
+  role      Role     @default(COMPANY_ADMIN)
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("invitations")
+}
+
+model Bookmark {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  programId    String   @map("program_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program      Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, programId])
+  @@map("bookmarks")
+}
+
+model ResearcherTeam {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  creatorId   String   @map("creator_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  creator      User     @relation("TeamCreator", fields: [creatorId], references: [id])
+  members      ResearcherTeamMember[]
+  reports      Report[]
+
+  @@map("researcher_teams")
+}
+
+model ResearcherTeamMember {
+  id          String   @id @default(cuid())
+  teamId      String   @map("team_id")
+  userId      String   @map("user_id")
+  share       Float    @default(0) // Percentage share
+  role        String   @default("MEMBER") // LEADER, MEMBER
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  team         ResearcherTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@map("researcher_team_members")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  title     String
+  message   String   @db.Text
+  type      String   // INFO, SUCCESS, WARNING, ERROR, REPORT_UPDATE, SLA_BREACH
+  isRead    Boolean  @default(false) @map("is_read")
+  relatedReportId String? @map("related_report_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("notifications")
 }

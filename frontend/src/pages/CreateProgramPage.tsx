@@ -4,7 +4,7 @@ import * as z from 'zod';
 import DashboardLayout from '../layouts/DashboardLayout';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
-import { Layers, FileText, Target, Wallet, DollarSign } from 'lucide-react';
+import { Layers, FileText, Target, Wallet, DollarSign, Clock, Shield } from 'lucide-react';
 import { toast }from 'react-hot-toast';
 
 const programSchema = z.object({
@@ -14,6 +14,11 @@ const programSchema = z.object({
   rewards: z.string().min(1, 'Reward range is required'),
   type: z.enum(['PUBLIC', 'PRIVATE']).default('PUBLIC'),
   budgetTotal: z.string().optional(),
+  slaFirstResponse: z.string().optional(),
+  slaTriage: z.string().optional(),
+  slaResolution: z.string().optional(),
+  safeHarbor: z.enum(['NONE', 'PARTIAL', 'FULL']).default('NONE'),
+  disclosurePolicy: z.string().optional(),
 });
 
 type ProgramFormValues = z.infer<typeof programSchema>;
@@ -98,6 +103,42 @@ export default function CreateProgramPage() {
             </div>
           </div>
 
+          <div className="bg-indigo-500/5 border border-indigo-500/10 p-8 rounded-2xl space-y-6">
+            <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              SLA Targets (Service Level Agreements)
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-[hsl(var(--text-muted))] uppercase tracking-widest">Time to First Response (Hours)</label>
+                <input 
+                  {...register('slaFirstResponse')} 
+                  type="number" 
+                  placeholder="24"
+                  className="w-full bg-[hsl(var(--bg-main))] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-sm text-[hsl(var(--text-main))] focus:border-indigo-500 outline-none transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-[hsl(var(--text-muted))] uppercase tracking-widest">Time to Triage (Hours)</label>
+                <input 
+                  {...register('slaTriage')} 
+                  type="number" 
+                  placeholder="72"
+                  className="w-full bg-[hsl(var(--bg-main))] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-sm text-[hsl(var(--text-main))] focus:border-indigo-500 outline-none transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-[hsl(var(--text-muted))] uppercase tracking-widest">Time to Resolution (Hours)</label>
+                <input 
+                  {...register('slaResolution')} 
+                  type="number" 
+                  placeholder="168"
+                  className="w-full bg-[hsl(var(--bg-main))] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-sm text-[hsl(var(--text-main))] focus:border-indigo-500 outline-none transition-all"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-semibold text-[hsl(var(--text-muted))] flex items-center gap-2">
               <FileText className="w-4 h-4 text-purple-400" />
@@ -124,6 +165,38 @@ export default function CreateProgramPage() {
               className="w-full bg-[hsl(var(--text-main))]/[0.05] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-[hsl(var(--text-main))] focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all font-mono text-sm resize-none placeholder:text-[hsl(var(--text-muted))]/50"
             />
             {errors.scope && <p className="text-xs text-rose-400 font-medium">{errors.scope.message}</p>}
+          </div>
+
+          <div className="space-y-4 pt-4 border-t border-[hsl(var(--border-subtle))]">
+             <h3 className="text-sm font-black text-[hsl(var(--text-main))] uppercase tracking-widest flex items-center gap-2">
+                <Shield className="w-4 h-4 text-emerald-400" />
+                Legal & Compliance
+             </h3>
+             
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                   <label className="text-sm font-semibold text-[hsl(var(--text-muted))]">Safe Harbor Status</label>
+                   <select
+                      {...register('safeHarbor')}
+                      className="w-full bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-[hsl(var(--text-main))] focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all cursor-pointer appearance-none"
+                   >
+                      <option value="NONE" className="bg-[hsl(var(--bg-card))]">No Safe Harbor</option>
+                      <option value="PARTIAL" className="bg-[hsl(var(--bg-card))]">Partial Safe Harbor</option>
+                      <option value="FULL" className="bg-[hsl(var(--bg-card))]">Full Safe Harbor</option>
+                   </select>
+                   <p className="text-[10px] text-[hsl(var(--text-muted))] leading-tight">Does this program offer legal protection for good-faith research?</p>
+                </div>
+             </div>
+
+             <div className="space-y-2">
+                <label className="text-sm font-semibold text-[hsl(var(--text-muted))]">Disclosure Policy</label>
+                <textarea
+                   {...register('disclosurePolicy')}
+                   rows={4}
+                   placeholder="e.g. Researchers must wait 90 days before public disclosure..."
+                   className="w-full bg-[hsl(var(--text-main))]/[0.05] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-[hsl(var(--text-main))] focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all resize-none placeholder:text-[hsl(var(--text-muted))]/50"
+                />
+             </div>
           </div>
 
           <div className="pt-4 flex items-center gap-4">

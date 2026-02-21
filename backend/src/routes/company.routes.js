@@ -1,16 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const companyController = require('../controllers/company.controller');
-const { protect, authorize } = require('../middleware/auth.middleware');
+const { protect, authorize, hasPermission } = require('../middleware/auth.middleware');
 
-router.get('/stats', protect, authorize('COMPANY_ADMIN'), companyController.getCompanyStats);
+router.get('/stats', protect, hasPermission('company:stats'), companyController.getCompanyStats);
+router.get('/budget/trends', protect, hasPermission('company:stats'), companyController.getBudgetTrends);
+router.get('/sla/stats', protect, hasPermission('company:stats'), companyController.getSlaStats);
 router.post('/verify', protect, authorize('COMPANY_ADMIN'), companyController.verifyCompany);
-router.get('/audit-logs', protect, authorize('COMPANY_ADMIN'), companyController.getAuditLogs);
-router.get('/audit-logs/export', protect, authorize('COMPANY_ADMIN'), companyController.exportAuditLogs);
+router.get('/audit-logs', protect, hasPermission('company:audit'), companyController.getAuditLogs);
+router.get('/audit-logs/export', protect, hasPermission('company:audit'), companyController.exportAuditLogs);
 
 // Team Management
-router.post('/members', protect, authorize('COMPANY_ADMIN'), companyController.inviteMember);
-router.get('/members', protect, authorize('COMPANY_ADMIN'), companyController.getMembers);
-router.delete('/members/:userId', protect, authorize('COMPANY_ADMIN'), companyController.removeMember);
+router.post('/members', protect, hasPermission('company:team'), companyController.inviteMember);
+router.get('/members', protect, hasPermission('company:team'), companyController.getMembers);
+router.delete('/members/:userId', protect, hasPermission('company:team'), companyController.removeMember);
 
 module.exports = router;

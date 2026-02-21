@@ -15,4 +15,11 @@ router.post('/reset-password/:token', authController.resetPassword);
 router.get('/me', protect, authController.getMe);
 router.post('/toggle-2fa', protect, authController.toggleMFA);
 
+// Company Invitation & Registration
+router.get('/validate-invite/:token', authController.validateInvite);
+router.post('/register-company', authController.registerCompany);
+
+// Email Verification Link
+router.get('/verify-email/:token', authController.verifyEmail);
+
 module.exports = router;

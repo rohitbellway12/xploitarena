@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --font-primary: 'Outfit', sans-serif;
-  
+  --font-primary: "Outfit", sans-serif;
+
   /* Shared Colors */
   --primary: 239 84% 67%;
   --secondary: 263 70% 50%;
@@ -24,15 +24,15 @@
 }
 
 .light {
-  --bg-main: 210 40% 98%;
-  --bg-card: 0 0% 100%;
-  --text-main: 222 47% 11%;
-  --text-muted: 215 16% 47%;
-  --border-subtle: 214 32% 91%;
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(0, 0, 0, 0.05);
-  --scrollbar-bg: rgba(0, 0, 0, 0.05);
-  --scrollbar-hover: rgba(0, 0, 0, 0.1);
+  --bg-main: 210 40% 99%;
+  --bg-card: 214 80% 97%;
+  --text-main: 222 47% 12%;
+  --text-muted: 215 25% 45%;
+  --border-subtle: 214 30% 90%;
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.04);
+  --scrollbar-bg: rgba(0, 0, 0, 0.08);
+  --scrollbar-hover: rgba(0, 0, 0, 0.15);
   color-scheme: light;
 }
 
@@ -54,7 +54,11 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: radial-gradient(circle at top right, hwb(240 7% 33% / 0.03), transparent 60%);
+  background: radial-gradient(
+    circle at top right,
+    hwb(240 7% 33% / 0.03),
+    transparent 60%
+  );
 }
 
 @layer utilities {
@@ -64,9 +68,13 @@ body {
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border);
   }
-  
+
   .glass-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.02) 0%,
+      rgba(255, 255, 255, 0) 100%
+    );
     backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.04);
   }
@@ -89,7 +97,10 @@ body {
 }
 
 /* Base Heading Styles for consistency */
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   letter-spacing: -0.02em;
 }
 

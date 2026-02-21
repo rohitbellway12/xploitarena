@@ -14,7 +14,16 @@ exports.getResearcherStats = async (req, res) => {
         } 
       }),
       prisma.program.findMany({
-        where: { status: 'ACTIVE' },
+        where: { 
+          status: 'ACTIVE',
+          OR: [
+            { type: 'PUBLIC' },
+            { 
+              type: 'PRIVATE',
+              invitedResearchers: { some: { id: researcherId } }
+            }
+          ]
+        },
         take: 3,
         orderBy: { createdAt: 'desc' }
       })
@@ -41,7 +50,11 @@ exports.getResearcherStats = async (req, res) => {
     });
   } catch (error) {
     console.error('Get Researcher Stats Error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('User:', req.user?.id, 'Role:', req.user?.role, 'ParentId:', req.user?.parentId);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -58,7 +71,7 @@ exports.getMyReports = async (req, res) => {
       },
       include: {
         program: {
-          select: { name: true }
+          select: { name: true, slaFirstResponse: true, slaTriage: true }
         }
       },
       orderBy: { updatedAt: 'desc' }
@@ -67,6 +80,40 @@ exports.getMyReports = async (req, res) => {
     res.json(reports);
   } catch (error) {
     console.error('Get My Reports Error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error', detail: error.message });
+  }
+};
+
+// Global Researcher Leaderboard
+exports.getLeaderboard = async (req, res) => {
+  try {
+    const researchers = await prisma.user.findMany({
+      where: { role: 'RESEARCHER' },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        reports: {
+          where: { status: { in: ['ACCEPTED', 'RESOLVED', 'PAID'] } },
+          select: { bountyAmount: true }
+        }
+      }
+    });
+
+    // Calculate total earnings for each researcher
+    const leaderboard = researchers.map(r => {
+      const totalEarnings = r.reports.reduce((sum, rep) => sum + (rep.bountyAmount || 0), 0);
+      return {
+        id: r.id,
+        name: `${r.firstName} ${r.lastName}`,
+        totalEarnings,
+        reportCount: r.reports.length
+      };
+    }).sort((a, b) => b.totalEarnings - a.totalEarnings);
+
+    res.json(leaderboard.slice(0, 50)); // Return top 50
+  } catch (error) {
+    console.error('Get Leaderboard Error:', error);
+    res.status(500).json({ message: 'Internal server error', detail: error.message });
   }
 };

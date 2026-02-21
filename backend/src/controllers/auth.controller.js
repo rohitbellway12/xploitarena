@@ -24,24 +24,39 @@ const register = async (req, res) => {
         lastName,
         role: role || 'RESEARCHER',
         isVerified: false, 
+        isActive: false, // Default to inactive, requires admin approval
         mfaEnabled: true, // Default to true as per user request
       },
     });
 
-    // Generate OTP for initial verification
+    // Generate Verification Token (using resetToken field for simplicity)
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // We'll also still generate the 2FA OTP for the dual flow if needed
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expires = new Date(Date.now() + 30 * 60 * 1000); // 30 mins
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { twoFactorCode: otp, twoFactorExpires: expires }
+      data: { 
+        twoFactorCode: otp, 
+        twoFactorExpires: expires,
+        resetToken: verificationTokenHash,
+        resetTokenExpires: verificationExpires
+      }
     });
 
     try {
-      await emailService.send2FACode(user.email, otp);
+      // Send the Verification Link instead of just the 2FA OTP immediately
+      const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email/${verificationToken}`;
+      await emailService.sendVerificationEmail(user.email, verifyUrl);
+      
+      // We can also send the 2FA code if they try to login before verifying
     } catch (emailError) {
       console.error('Failed to send verification email:', emailError);
-      // We don't fail registration, but user will need to resend OTP or contact support
+      // We don't fail registration, but user will need to resend verification or contact support
     }
 
     await auditService.record({
@@ -52,7 +67,7 @@ const register = async (req, res) => {
     });
 
     res.status(201).json({ 
-      message: 'User registered successfully. Please verify your email.', 
+      message: 'Registration successful! Please check your email for the verification link. Access will be granted after review.', 
       userId: user.id 
     });
   } catch (error) {
@@ -61,24 +76,73 @@ const register = async (req, res) => {
   }
 };
 
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+    
+    const verificationTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: verificationTokenHash,
+        resetTokenExpires: { gt: new Date() }
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired verification link.' });
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isVerified: true,
+        resetToken: null,
+        resetTokenExpires: null
+      }
+    });
+
+    await auditService.record({
+      action: 'USER_EMAIL_VERIFIED',
+      userId: user.id,
+      ipAddress: req.ip
+    });
+
+    res.status(200).json({ message: 'Email successfully verified. You can now log in.' });
+  } catch (error) {
+    console.error('Email Verification Error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 const login = async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password } = req.body;
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ 
+      where: { email },
+      include: {
+        customRole: {
+          include: {
+            permissions: {
+              include: {
+                permission: true
+              }
+            }
+          }
+        }
+      }
+    });
+
     if (!user) {
       await auditService.record({ action: 'AUTH_FAILED_UNKNOWN_USER', details: { email }, ipAddress: req.ip });
       return res.status(401).json({ message: 'Email not registered' });
     }
 
-    // Role validation (if provided by frontend)
-    if (role && user.role !== role) {
-      let friendlyRole = user.role;
-      if (user.role === 'RESEARCHER') friendlyRole = 'Researcher';
-      else if (user.role === 'COMPANY_ADMIN') friendlyRole = 'Organization';
-      else if (user.role === 'TRIAGER') friendlyRole = 'Triager';
-      
-      return res.status(403).json({ message: `This account is registered as a ${friendlyRole}. Please select the correct tab.` });
+    // Check if account is active
+    if (!user.isActive) {
+      await auditService.record({ action: 'AUTH_BLOCKED_INACTIVE', userId: user.id, ipAddress: req.ip });
+      return res.status(403).json({ message: 'Account is deactivated. Please contact administrator.' });
     }
 
     // Check account lockout
@@ -135,9 +199,11 @@ const login = async (req, res) => {
       }
 
       try {
+        console.log(`Initiating 2FA email send for user: ${user.email}`);
         await emailService.send2FACode(user.email, otp);
+        console.log(`2FA email send called for user: ${user.email}`);
       } catch (emailError) {
-        console.error('Failed to send 2FA email:', emailError);
+        console.error('CRITICAL: Failed to send 2FA email in login flow:', emailError);
       }
 
       await auditService.record({ action: 'AUTH_2FA_INITIATED', userId: user.id, ipAddress: req.ip });
@@ -171,6 +237,8 @@ const login = async (req, res) => {
 
     await auditService.record({ action: 'AUTH_LOGIN_SUCCESS', userId: user.id, ipAddress: req.ip });
 
+    const permissions = user.customRole?.permissions.map(p => p.permission.key) || [];
+
     res.status(200).json({
       accessToken,
       refreshToken: rToken,
@@ -180,6 +248,8 @@ const login = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        parentId: user.parentId,
+        permissions
       },
     });
   } catch (error) {
@@ -266,7 +336,20 @@ const verify2FA = async (req, res) => {
   try {
     const { userId, code } = req.body;
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({ 
+      where: { id: userId },
+      include: {
+        customRole: {
+          include: {
+            permissions: {
+              include: {
+                permission: true
+              }
+            }
+          }
+        }
+      }
+    });
 
     if (!user || user.twoFactorCode !== code?.trim() || !user.twoFactorExpires || user.twoFactorExpires < new Date()) {
       await auditService.record({ action: 'AUTH_2FA_FAILED', userId: userId, details: 'Invalid or expired code', ipAddress: req.ip });
@@ -301,6 +384,8 @@ const verify2FA = async (req, res) => {
 
     await auditService.record({ action: 'AUTH_2FA_SUCCESS', userId: user.id, ipAddress: req.ip });
 
+    const permissions = user.customRole?.permissions.map(p => p.permission.key) || [];
+
     res.status(200).json({
       accessToken,
       refreshToken: rToken,
@@ -310,6 +395,8 @@ const verify2FA = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        parentId: user.parentId,
+        permissions
       },
     });
   } catch (error) {
@@ -322,22 +409,51 @@ const getMe = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        isVerified: true,
-        mfaEnabled: true,
-        createdAt: true,
+      include: {
+        customRole: {
+          include: {
+            permissions: {
+              include: {
+                permission: true
+              }
+            }
+          }
+        }
       }
     });
-    res.status(200).json(user);
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    const permissions = user.customRole?.permissions.map(p => p.permission.key) || [];
+
+    // For sub-accounts, fetch parent's kybStatus so the UI shows correct verification state
+    let kybStatus = user.kybStatus;
+    if (user.parentId) {
+      const parent = await prisma.user.findUnique({
+        where: { id: user.parentId },
+        select: { kybStatus: true }
+      });
+      if (parent) kybStatus = parent.kybStatus;
+    }
+
+    res.status(200).json({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      parentId: user.parentId,
+      isVerified: user.isVerified,
+      mfaEnabled: user.mfaEnabled,
+      createdAt: user.createdAt,
+      kybStatus,
+      permissions
+    });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
 
 // crypto already moved to top
 
@@ -445,6 +561,66 @@ const toggleMFA = async (req, res) => {
   }
 };
 
+const validateInvite = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const invite = await prisma.invitation.findUnique({
+      where: { token }
+    });
+
+    if (!invite || invite.used || invite.expiresAt < new Date()) {
+      return res.status(400).json({ message: 'Invalid or expired invitation' });
+    }
+
+    res.json({ email: invite.email, role: invite.role });
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const registerCompany = async (req, res) => {
+  try {
+    const { token, password, firstName, lastName } = req.body;
+
+    // 1. Validate Invitation
+    const invite = await prisma.invitation.findUnique({ where: { token } });
+    if (!invite || invite.used || invite.expiresAt < new Date()) {
+      return res.status(400).json({ message: 'Invalid or expired invitation' });
+    }
+
+    // 2. Hash Password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // 3. Create User (Inactive by default, Verified because they have the token)
+    const user = await prisma.user.create({
+      data: {
+        email: invite.email,
+        passwordHash: hashedPassword,
+        firstName,
+        lastName,
+        role: 'COMPANY_ADMIN',
+        isVerified: true, // Verification via invite token
+        isActive: false,  // Wait for admin approval
+        mfaEnabled: true
+      }
+    });
+
+    // 4. Mark invitation as used
+    await prisma.invitation.update({
+      where: { id: invite.id },
+      data: { used: true }
+    });
+
+    res.status(201).json({ 
+      message: 'Registration successful. Your account is now pending administrative approval.',
+      userId: user.id
+    });
+  } catch (error) {
+    console.error('Register Company Error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -456,4 +632,7 @@ module.exports = {
   logout,
   revokeAllSessions,
   toggleMFA,
+  validateInvite,
+  registerCompany,
+  verifyEmail,
 };

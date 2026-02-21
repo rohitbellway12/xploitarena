@@ -1,4 +1,4 @@
-// src/app.js
+// src/app.js - v1.1 restart
 require('dotenv').config();
 
 process.on('uncaughtException', (err) => {
@@ -27,6 +27,10 @@ const researcherRoutes = require('./routes/researcher.routes');
 const adminRoutes = require('./routes/admin.routes');
 const socialAuthRoutes = require('./routes/socialAuth.routes');
 const eventRoutes = require('./routes/event.routes');
+const rbacRoutes = require('./routes/rbac.routes');
+const teamRoutes = require('./routes/team.routes');
+const notificationRoutes = require('./routes/notification.routes');
+const slaService = require('./services/sla.service');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -56,7 +60,14 @@ app.use('/api/company', companyRoutes);
 app.use('/api/researcher', researcherRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/rbac', rbacRoutes);
+app.use('/api/team', teamRoutes);
+app.use('/api/researcher-teams', require('./routes/researcher_teams.routes'));
 app.use('/api/upload', require('./routes/upload.routes'));
+app.use('/api/comments', require('./routes/comment.routes'));
+app.use('/api/employees', require('./routes/employee.routes'));
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/inbox', notificationRoutes);
 
 // ---- Error Handling Middleware (Always at the end) ----
 app.use((err, req, res, next) => {
@@ -65,7 +76,13 @@ app.use((err, req, res, next) => {
 });
 
 // ---- Server Start ----
-setInterval(() => {}, 60000);
+// Run SLA breach check every hour
+setInterval(() => {
+  console.log('Running automated SLA breach check...');
+  slaService.checkAndNotifyBreaches().catch(err => console.error('SLA Breach Check Error:', err));
+}, 60 * 60 * 1000);
+
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+ 

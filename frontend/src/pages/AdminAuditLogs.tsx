@@ -3,7 +3,6 @@ import DashboardLayout from '../layouts/DashboardLayout';
 import { 
   FileText, 
   Search, 
-  Filter, 
   Download, 
   ChevronLeft, 
   ChevronRight,
@@ -15,22 +14,33 @@ import api from '../api/axios';
 
 interface AuditLog {
   id: string;
+  action: string;
+  details: string;
+  ipAddress: string;
   createdAt: string;
-  severity: string;
-  researcher: { firstName: string, lastName: string, email: string };
-  program: { name: string };
+  user: { firstName: string, lastName: string, email: string, role: string };
+  report?: { title: string };
 }
 
 export default function AdminAuditLogs() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [paginationMeta, setPaginationMeta] = useState({ total: 0, totalPages: 0 });
+  const [exporting, setExporting] = useState<string | null>(null);
+  const logsPerPage = 15;
 
   useEffect(() => {
     const fetchLogs = async () => {
+      setLoading(true);
       try {
-        const response = await api.get('/admin/stats'); // Reusing stats for activity logs for now
-        setLogs(response.data.latestActivity);
+        const response = await api.get(`/admin/audit-logs?page=${currentPage}&limit=${logsPerPage}`);
+        setLogs(response.data.logs);
+        setPaginationMeta({
+          total: response.data.total,
+          totalPages: response.data.totalPages
+        });
       } catch (error) {
         console.error('Failed to fetch logs:', error);
       } finally {
@@ -38,7 +48,35 @@ export default function AdminAuditLogs() {
       }
     };
     fetchLogs();
-  }, []);
+  }, [currentPage]);
+
+  const handleExport = async (format: 'csv' | 'json') => {
+    setExporting(format);
+    try {
+      const response = await api.get(`/admin/audit-logs/export?format=${format}`, {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `audit-logs.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const filteredLogs = logs.filter(log => 
+    log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.user?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.details?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <DashboardLayout>
@@ -57,8 +95,23 @@ export default function AdminAuditLogs() {
           </div>
           
           <div className="flex items-center gap-3">
-            <button className="p-2.5 bg-[hsl(var(--text-main))]/[0.05] border border-[hsl(var(--border-subtle))] rounded-lg text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-main))] transition-all">
-              <Download className="w-4 h-4" />
+            <button 
+              onClick={() => handleExport('csv')}
+              disabled={exporting !== null}
+              className="px-3 py-2 bg-[hsl(var(--text-main))]/[0.05] border border-[hsl(var(--border-subtle))] rounded-lg text-[hsl(var(--text-muted))] hover:text-indigo-400 transition-all flex items-center gap-2 text-xs font-bold uppercase tracking-wider disabled:opacity-50"
+              title="Export as CSV"
+            >
+              {exporting === 'csv' ? <div className="w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
+              CSV
+            </button>
+            <button 
+              onClick={() => handleExport('json')}
+              disabled={exporting !== null}
+              className="px-3 py-2 bg-[hsl(var(--text-main))]/[0.05] border border-[hsl(var(--border-subtle))] rounded-lg text-[hsl(var(--text-muted))] hover:text-indigo-400 transition-all flex items-center gap-2 text-xs font-bold uppercase tracking-wider disabled:opacity-50"
+              title="Export as JSON"
+            >
+              {exporting === 'json' ? <div className="w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" /> : <FileText className="w-4 h-4" />}
+              JSON
             </button>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--text-muted))]" />
@@ -73,45 +126,30 @@ export default function AdminAuditLogs() {
           </div>
         </div>
 
-        {/* Filters Row */}
-        <div className="flex items-center gap-3 py-2">
-          <button className="px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold rounded-lg uppercase tracking-widest flex items-center gap-2">
-            <Filter className="w-3 h-3" />
-            Severity: All
-          </button>
-          <button className="px-3 py-1.5 bg-[hsl(var(--text-main))]/[0.05] border border-[hsl(var(--border-subtle))] text-[hsl(var(--text-muted))] text-[10px] font-bold rounded-lg uppercase tracking-widest flex items-center gap-2">
-            Type: Submissions
-          </button>
-          <button className="px-3 py-1.5 bg-[hsl(var(--text-main))]/[0.05] border border-[hsl(var(--border-subtle))] text-[hsl(var(--text-muted))] text-[10px] font-bold rounded-lg uppercase tracking-widest flex items-center gap-2">
-            Date Range
-          </button>
-        </div>
-
         {/* Audit Logs Table */}
         <div className="bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] rounded-xl overflow-hidden backdrop-blur-sm shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="text-[10px] font-black text-[hsl(var(--text-muted))] uppercase tracking-widest border-b border-[hsl(var(--border-subtle))] bg-[hsl(var(--text-main))]/[0.01]">
-                  <th className="px-6 py-4">Event Type</th>
-                  <th className="px-6 py-4">Security Analyst</th>
-                  <th className="px-6 py-4">Target Resource</th>
-                  <th className="px-6 py-4">Priority</th>
-                  <th className="px-6 py-4">Logged At</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th className="px-6 py-4">Action</th>
+                  <th className="px-6 py-4">User</th>
+                  <th className="px-6 py-4">Context / Resource</th>
+                  <th className="px-6 py-4">IP Address</th>
+                  <th className="px-6 py-4">Timestamp</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[hsl(var(--border-subtle))] text-sm">
                 {loading ? (
-                  [...Array(8)].map((_, i) => (
+                  [...Array(logsPerPage)].map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td colSpan={6} className="px-6 py-6 border-b border-[hsl(var(--border-subtle))]">
+                      <td colSpan={5} className="px-6 py-6 border-b border-[hsl(var(--border-subtle))]">
                         <div className="h-4 bg-[hsl(var(--text-main))]/[0.05] rounded w-full"></div>
                       </td>
                     </tr>
                   ))
-                ) : logs.length > 0 ? (
-                  logs.map((log) => (
+                ) : filteredLogs.length > 0 ? (
+                  filteredLogs.map((log) => (
                     <tr key={log.id} className="hover:bg-[hsl(var(--text-main))]/[0.01] transition-all group">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -119,36 +157,35 @@ export default function AdminAuditLogs() {
                              <ShieldAlert className="w-4 h-4" />
                           </div>
                           <div>
-                            <p className="font-bold text-[hsl(var(--text-main))] text-xs uppercase tracking-tight">Vulnerability Disclosed</p>
-                            <p className="text-[10px] text-[hsl(var(--text-muted))] font-medium">Platform Signal</p>
+                            <p className="font-bold text-[hsl(var(--text-main))] text-xs uppercase tracking-tight">{log.action.replace(/_/g, ' ')}</p>
+                            <p className="text-[10px] text-[hsl(var(--text-muted))] font-medium">System Event</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-full bg-[hsl(var(--text-main))]/[0.05] border border-[hsl(var(--border-subtle))] flex items-center justify-center text-[10px] font-bold text-[hsl(var(--text-muted))] uppercase">
-                            {log.researcher.firstName[0]}
+                            {log.user?.firstName?.[0] || 'U'}
                           </div>
                           <div className="flex flex-col">
-                            <span className="font-semibold text-[hsl(var(--text-main))] opacity-90">{log.researcher.firstName} {log.researcher.lastName}</span>
-                            <span className="text-[10px] text-[hsl(var(--text-muted))]">{log.researcher.email}</span>
+                            <span className="font-semibold text-[hsl(var(--text-main))] opacity-90">{log.user?.firstName} {log.user?.lastName}</span>
+                            <span className="text-[10px] text-[hsl(var(--text-muted))]">{log.user?.email}</span>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <Building2 className="w-3.5 h-3.5 text-[hsl(var(--text-muted))]" />
-                          <span className="text-[hsl(var(--text-main))] opacity-80 font-medium">{log.program.name}</span>
+                        <div className="flex flex-col gap-1">
+                          {log.report && (
+                             <div className="flex items-center gap-2">
+                               <Building2 className="w-3.5 h-3.5 text-indigo-400" />
+                               <span className="text-xs text-indigo-400 font-medium">Report: {log.report.title}</span>
+                             </div>
+                          )}
+                          <span className="text-[10px] text-[hsl(var(--text-muted))] break-all max-w-xs">{log.details}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-0.5 rounded-[4px] text-[10px] font-black tracking-widest uppercase ${
-                          log.severity === 'CRITICAL' ? 'text-rose-500 bg-rose-500/5' :
-                          log.severity === 'HIGH' ? 'text-orange-500 bg-orange-500/5' :
-                          'text-indigo-400 bg-indigo-500/5'
-                        }`}>
-                          {log.severity}
-                        </span>
+                      <td className="px-6 py-4 text-xs font-mono text-[hsl(var(--text-muted))]">
+                        {log.ipAddress}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 text-[hsl(var(--text-muted))]">
@@ -158,16 +195,11 @@ export default function AdminAuditLogs() {
                            </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <button className="px-3 py-1.5 bg-[hsl(var(--text-main))]/[0.05] hover:bg-[hsl(var(--text-main))]/[0.1] border border-[hsl(var(--border-subtle))] rounded-lg text-[10px] font-bold text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-main))] transition-all uppercase tracking-widest">
-                          Trace
-                        </button>
-                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-20 text-center text-[hsl(var(--text-muted))]">
+                    <td colSpan={5} className="px-6 py-20 text-center text-[hsl(var(--text-muted))]">
                         No audit records found. Monitoring active.
                     </td>
                   </tr>
@@ -179,13 +211,21 @@ export default function AdminAuditLogs() {
           {/* Pagination */}
           <div className="px-6 py-4 border-t border-[hsl(var(--border-subtle))] flex items-center justify-between bg-[hsl(var(--text-main))]/[0.01]">
             <span className="text-xs font-medium text-[hsl(var(--text-muted))]">
-              Showing logs 1 - {logs.length} of {logs.length}
+              Showing page {currentPage} of {paginationMeta.totalPages || 1} ({paginationMeta.total} total logs)
             </span>
             <div className="flex items-center gap-2">
-              <button disabled className="p-1.5 rounded-lg border border-[hsl(var(--border-subtle))] text-[hsl(var(--text-muted))] opacity-30 cursor-not-allowed">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1 || loading}
+                className="p-1.5 rounded-lg border border-[hsl(var(--border-subtle))] text-[hsl(var(--text-muted))] hover:bg-[hsl(var(--text-main))]/[0.05] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <button disabled className="p-1.5 rounded-lg border border-[hsl(var(--border-subtle))] text-[hsl(var(--text-muted))] opacity-30 cursor-not-allowed">
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(paginationMeta.totalPages, p + 1))}
+                disabled={currentPage === paginationMeta.totalPages || loading}
+                className="p-1.5 rounded-lg border border-[hsl(var(--border-subtle))] text-[hsl(var(--text-muted))] hover:bg-[hsl(var(--text-main))]/[0.05] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>

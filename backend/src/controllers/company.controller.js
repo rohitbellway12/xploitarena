@@ -1,12 +1,14 @@
 const prisma = require('../utils/prisma');
 const auditService = require('../services/audit.service');
+const slaService = require('../services/sla.service');
 
 // Get statistics for company dashboard
 exports.getCompanyStats = async (req, res) => {
   try {
-    const companyId = req.user.id;
+    // If sub-account, use parent's ID as the owning company
+    const companyId = req.user.parentId || req.user.id;
 
-    const [programCount, reportCount, criticalCount, recentReports] = await Promise.all([
+    const [programCount, reportCount, criticalCount, recentReports, severitySpending] = await Promise.all([
       prisma.program.count({ where: { companyId } }),
       prisma.report.count({ where: { program: { companyId } } }),
       prisma.report.count({ where: { program: { companyId }, severity: 'CRITICAL' } }),
@@ -15,35 +17,70 @@ exports.getCompanyStats = async (req, res) => {
         take: 5,
         orderBy: { createdAt: 'desc' },
         include: {
-          program: { select: { name: true } },
-          researcher: { select: { firstName: true, email: true } }
+          program: { select: { name: true, slaFirstResponse: true, slaTriage: true, slaResolution: true } },
+          researcher: { select: { firstName: true, lastName: true, email: true } }
         }
+      }),
+      prisma.report.groupBy({
+        by: ['severity'],
+        where: { program: { companyId }, status: 'PAID' },
+        _sum: { bountyAmount: true }
       })
     ]);
+
+    const spendingBySeverity = {
+      LOW: severitySpending.find(s => s.severity === 'LOW')?._sum.bountyAmount || 0,
+      MEDIUM: severitySpending.find(s => s.severity === 'MEDIUM')?._sum.bountyAmount || 0,
+      HIGH: severitySpending.find(s => s.severity === 'HIGH')?._sum.bountyAmount || 0,
+      CRITICAL: severitySpending.find(s => s.severity === 'CRITICAL')?._sum.bountyAmount || 0,
+    };
 
     res.json({
       programCount,
       reportCount,
       criticalCount,
-      recentReports
+      recentReports,
+      spendingBySeverity
     });
   } catch (error) {
     console.error('Get Company Stats Error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('User:', req.user?.id, 'Role:', req.user?.role, 'ParentId:', req.user?.parentId);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
-// Stub for Company Verification flow
+// Submit Company Verification (KYB)
 exports.verifyCompany = async (req, res) => {
   try {
-    // In a real app, this would handle document uploads/KYC
+    const { companyDetails, documentIds } = req.body;
+    const userId = req.user.id;
+
+    // Update user status and link documents if needed
+    // In this simplified model, we just update the status and record the intent.
+    // The documents are already uploaded and linked to the user via uploaderId in File model.
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { 
+        kybStatus: 'PENDING'
+      }
+    });
+
     await auditService.record({
-      action: 'COMPANY_VERIFICATION_INITIATED',
-      userId: req.user.id,
+      action: 'COMPANY_KYB_SUBMITTED',
+      userId: userId,
+      details: { companyDetails, documentCount: documentIds?.length || 0 },
       ipAddress: req.ip
     });
-    res.json({ message: 'Verification documents received and are under review.' });
+
+    res.json({ 
+      message: 'KYB verification documents submitted successfully. Our team will review them shortly.',
+      status: user.kybStatus
+    });
   } catch (error) {
+    console.error('Verify Company Error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -68,6 +105,40 @@ exports.getAuditLogs = async (req, res) => {
     res.json(logs);
   } catch (error) {
     console.error('Get Audit Logs Error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Get SLA metrics for company programs
+exports.getSlaStats = async (req, res) => {
+  try {
+    const companyId = req.user.parentId || req.user.id;
+    const reports = await prisma.report.findMany({
+      where: { 
+        program: { companyId },
+        status: { not: 'DRAFT' }
+      },
+      include: { program: true }
+    });
+
+    const metrics = slaService.calculateMetrics(reports);
+    
+    // Add breached reports for this company
+    const breachedReports = reports.filter(r => slaService.isBreached(r, 'firstResponse'))
+      .map(r => ({
+        id: r.id,
+        title: r.title,
+        program: r.program.name,
+        submittedAt: r.submittedAt,
+        deadline: slaService.calculateDeadline(r.submittedAt, r.program.slaFirstResponse)
+      }));
+
+    res.json({
+      ...metrics,
+      breachedReports
+    });
+  } catch (error) {
+    console.error('Get Company SLA Stats Error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -121,7 +192,7 @@ exports.exportAuditLogs = async (req, res) => {
 exports.inviteMember = async (req, res) => {
   try {
     const { email, role } = req.body;
-    const companyId = req.user.id;
+    const companyId = req.user.parentId || req.user.id;
 
     const userToInvite = await prisma.user.findUnique({ where: { email } });
 
@@ -169,7 +240,7 @@ exports.inviteMember = async (req, res) => {
 exports.removeMember = async (req, res) => {
   try {
     const { userId } = req.params;
-    const companyId = req.user.id;
+    const companyId = req.user.parentId || req.user.id;
 
     await prisma.companyMember.delete({
       where: {
@@ -197,7 +268,7 @@ exports.removeMember = async (req, res) => {
 // Get Team Members
 exports.getMembers = async (req, res) => {
   try {
-    const companyId = req.user.id;
+    const companyId = req.user.parentId || req.user.id;
 
     const members = await prisma.companyMember.findMany({
       where: { companyId },
@@ -211,6 +282,50 @@ exports.getMembers = async (req, res) => {
     res.json(members);
   } catch (error) {
     console.error('Get Members Error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+/**
+ * Get aggregated budget trend data for charts
+ */
+exports.getBudgetTrends = async (req, res) => {
+  try {
+    const companyId = req.user.parentId || req.user.id;
+    const { days = 30 } = req.query;
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - parseInt(days));
+
+    // Get all paid reports for this company's programs after startDate
+    const reports = await prisma.report.findMany({
+      where: {
+        program: { companyId },
+        status: 'PAID',
+        resolvedAt: { gte: startDate }
+      },
+      select: {
+        bountyAmount: true,
+        resolvedAt: true
+      },
+      orderBy: { resolvedAt: 'asc' }
+    });
+
+    // Aggregate by date
+    const trends = reports.reduce((acc, report) => {
+      const date = report.resolvedAt.toISOString().split('T')[0];
+      acc[date] = (acc[date] || 0) + (report.bountyAmount || 0);
+      return acc;
+    }, {});
+
+    const trendArray = Object.keys(trends).map(date => ({
+      date,
+      amount: trends[date]
+    })).sort((a, b) => a.date.localeCompare(b.date));
+
+    res.json(trendArray);
+  } catch (error) {
+    console.error('Get Budget Trends Error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };

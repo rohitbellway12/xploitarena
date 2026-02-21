@@ -10,11 +10,19 @@ import {
   ShieldCheck,
   Building2,
   CheckCircle2,
-  Cpu
+  Cpu,
+  type LucideIcon
 } from 'lucide-react';
 
 interface SidebarProps {
   role: string;
+}
+
+interface NavItem {
+  name: string;
+  path: string;
+  icon: LucideIcon;
+  permission?: string;
 }
 
 export default function Sidebar({ role }: SidebarProps) {
@@ -27,49 +35,72 @@ export default function Sidebar({ role }: SidebarProps) {
     navigate('/login');
   };
 
-  const researcherLinks = [
-    { name: 'Dashboard', path: '/researcher/dashboard', icon: LayoutDashboard },
-    { name: 'Directory', path: '/researcher/programs', icon: Search },
-    { name: 'Submissions', path: '#', icon: FileText },
-    { name: 'Leaderboard', path: '/researcher/events', icon: Trophy },
+  const userString = localStorage.getItem('user');
+  const user = userString ? JSON.parse(userString) : null;
+  const permissions = user?.permissions || [];
+  const isRoot = !user?.parentId;
+
+  const adminLinks: NavItem[] = [
+    { name: 'Management', path: '/admin/dashboard', icon: LayoutDashboard, permission: 'admin:stats' },
+    { name: 'Researchers', path: '/admin/researchers', icon: Users, permission: 'admin:researchers' },
+    { name: 'Company Hub', path: '/admin/companies', icon: Building2, permission: 'admin:companies' },
+    { name: 'Triagers', path: '/admin/triagers', icon: ShieldCheck, permission: 'admin:triagers' },
+    { name: 'Audit Logs', path: '/admin/logs', icon: FileText, permission: 'admin:audit' },
+    { name: 'Permissions', path: '/admin/permissions', icon: ShieldCheck, permission: 'admin:settings' },
+    { name: 'Event Management', path: '/admin/events', icon: Trophy, permission: 'admin:events' },
+    { name: 'Admin Team', path: '/admin/team', icon: Users, permission: 'admin:stats' },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
-  const companyLinks = [
-    { name: 'Overview', path: '/company/dashboard', icon: LayoutDashboard },
-    { name: 'Programs', path: '/company/create-program', icon: ShieldCheck },
+  const companyLinks: NavItem[] = [
+    { name: 'Overview', path: '/company/dashboard', icon: LayoutDashboard, permission: 'company:stats' },
+    { name: 'Programs', path: '/company/programs', icon: ShieldCheck, permission: 'company:programs' },
+    { name: 'Events', path: '/events', icon: Trophy },
     { name: 'Asset Management', path: '#', icon: Building2 },
-    { name: 'Team Access', path: '/company/teams', icon: Users },
     { name: 'Security Review', path: '#', icon: CheckCircle2 },
+    { name: 'Team', path: '/team-management', icon: Users, permission: 'company:team' },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
-  const adminLinks = [
-    { name: 'Management', path: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Researchers', path: '/admin/researchers', icon: Users },
-    { name: 'Company Hub', path: '/admin/companies', icon: Building2 },
-    { name: 'Audit Logs', path: '/admin/logs', icon: FileText },
+  const researcherLinks: NavItem[] = [
+    { name: 'Dashboard', path: '/researcher/dashboard', icon: LayoutDashboard, permission: 'researcher:dashboard' },
+    { name: 'Directory', path: '/researcher/programs', icon: Search, permission: 'researcher:programs' },
+    { name: 'Events', path: '/researcher/events', icon: Trophy },
+    { name: 'Submissions', path: '/researcher/submissions', icon: FileText, permission: 'researcher:reports' },
+    { name: 'Leaderboard', path: '/researcher/leaderboard', icon: Trophy, permission: 'researcher:leaderboard' },
+    { name: 'Team', path: '/researcher/teams', icon: Users, permission: 'researcher:teams' },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
-  const triagerLinks = [
+  const triagerLinks: NavItem[] = [
     { name: 'Triage Panel', path: '/triager/dashboard', icon: LayoutDashboard },
     { name: 'Public Programs', path: '/researcher/programs', icon: Search },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
   const getLinks = () => {
+    let baseLinks: NavItem[] = [];
     switch (role) {
-      case 'ADMIN':
-      case 'SUPER_ADMIN':
-        return adminLinks;
-      case 'COMPANY_ADMIN':
-        return companyLinks;
-      case 'TRIAGER':
-        return triagerLinks;
-      default:
-        return researcherLinks;
+      case 'SUPER_ADMIN': return adminLinks; // Super Admin sees all
+      case 'ADMIN': baseLinks = adminLinks; break;
+      case 'COMPANY_ADMIN': baseLinks = companyLinks; break;
+      case 'TRIAGER': baseLinks = triagerLinks; break;
+      default: baseLinks = researcherLinks; break;
     }
+
+    // If Root, they see everything in their category
+    if (isRoot && role !== 'SUPER_ADMIN') {
+      return baseLinks;
+    }
+
+    // If sub-account, filter by explicit permissions
+    // Note: If permissions are empty, they will only see links without the 'permission' key (like Settings)
+
+
+    return baseLinks.filter(link => {
+      if (!link.permission) return true; // Always show settings/links without perms
+      return permissions.includes(link.permission);
+    });
   };
 
   const links = getLinks();
@@ -96,8 +127,8 @@ export default function Sidebar({ role }: SidebarProps) {
               key={link.name}
               href={link.path}
               onClick={(e) => {
-                if (link.path === '#') e.preventDefault();
-                else navigate(link.path);
+                e.preventDefault();
+                if (link.path !== '#') navigate(link.path);
               }}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all duration-200 group ${
                 isActive 

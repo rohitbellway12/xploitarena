@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Sidebar from '../components/Sidebar';
-import { User, Bell, Search, Sun, Moon } from 'lucide-react';
+import GlobalSearch from '../components/GlobalSearch';
+import { User, Bell, Sun, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
@@ -24,16 +25,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-500/5 dark:bg-indigo-500/[0.03] blur-[120px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
         
         {/* Clean Top Header */}
-        <header className="h-20 border-b border-[hsl(var(--border-subtle))] flex items-center justify-between px-10 bg-[hsl(var(--bg-main))]/80 backdrop-blur-md sticky top-0 z-50 transition-colors duration-300">
+        <header className="h-20 border-b border-[hsl(var(--border-subtle))] flex items-center justify-between px-10 bg-[hsl(var(--bg-card))]/90 backdrop-blur-xl sticky top-0 z-50 transition-colors duration-300">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 px-3 py-1.5 bg-[hsl(var(--text-main))]/[0.03] border border-[hsl(var(--border-subtle))] rounded-xl">
-              <Search className="w-4 h-4 text-[hsl(var(--text-muted))]" />
-              <input 
-                type="text" 
-                placeholder="Global Search" 
-                className="bg-transparent border-none text-[11px] font-bold text-[hsl(var(--text-main))] placeholder-[hsl(var(--text-muted))] outline-none w-40 tracking-wider uppercase"
-              />
-            </div>
+            <GlobalSearch />
           </div>
 
           <div className="flex items-center gap-6">
@@ -50,9 +44,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 )}
               </button>
 
-              <button className="p-2.5 text-[hsl(var(--text-muted))] hover:text-white dark:hover:text-white transition-all relative group">
+              <button 
+                onClick={() => navigate('/inbox')}
+                className="p-2.5 text-[hsl(var(--text-muted))] hover:text-indigo-500 transition-all relative group rounded-xl hover:bg-indigo-500/5"
+              >
                 <Bell className="w-4.5 h-4.5" />
-                <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-indigo-500 rounded-full ring-2 ring-[hsl(var(--bg-main))]"></span>
+                <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-indigo-500 rounded-full ring-2 ring-[hsl(var(--bg-card))]"></span>
               </button>
             </div>
 
@@ -77,8 +74,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-10 scrollbar-hide relative z-10">
           <motion.div
-            initial={{ opacity: 0, scale: 0.995 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
             {children}

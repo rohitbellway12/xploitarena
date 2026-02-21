@@ -9,18 +9,8 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Storage Strategy
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    // Generate secure unique filename
-    // Original extension is preserved but filename is random UUID
-    const ext = path.extname(file.originalname);
-    cb(null, `${uuidv4()}${ext}`);
-  }
-});
+// Storage Strategy - Memory Storage for encryption pipeline
+const storage = multer.memoryStorage();
 
 // File Filter (Security)
 const fileFilter = (req, file, cb) => {

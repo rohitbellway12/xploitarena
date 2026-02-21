@@ -4,8 +4,13 @@ const auditService = require('../services/audit.service');
 // Create a new program
 exports.createProgram = async (req, res) => {
   try {
-    const { name, description, scope, rules, rewards, type, budgetTotal } = req.body;
-    const companyId = req.user.id; // From authMiddleware
+    const { 
+      name, description, scope, rules, rewards, type, budgetTotal,
+      slaFirstResponse, slaTriage, slaResolution,
+      disclosurePolicy, safeHarbor
+    } = req.body;
+    // Use parentId if sub-account, otherwise use own ID
+    const companyId = req.user.parentId || req.user.id; 
 
     const program = await prisma.program.create({
       data: {
@@ -16,7 +21,12 @@ exports.createProgram = async (req, res) => {
         rewards,
         type: type || 'PUBLIC',
         budgetTotal: budgetTotal ? parseFloat(budgetTotal) : null,
+        slaFirstResponse: slaFirstResponse ? parseInt(slaFirstResponse) : null,
+        slaTriage: slaTriage ? parseInt(slaTriage) : null,
+        slaResolution: slaResolution ? parseInt(slaResolution) : null,
         companyId,
+        disclosurePolicy,
+        safeHarbor: safeHarbor || 'NONE',
       },
     });
 
@@ -41,21 +51,34 @@ exports.createProgram = async (req, res) => {
 exports.getAllPrograms = async (req, res) => {
   try {
     const userId = req.user ? req.user.id : null;
+    // Resolve effective ID (use parent if sub-account for ownership checks)
+    const effectiveId = req.user ? (req.user.parentId || req.user.id) : null;
     
-    // Build query
-    const whereClause = {
-      status: 'ACTIVE',
-      OR: [
+    const { minBounty, type: filterType } = req.query;
+    
+    const whereClause = { status: 'ACTIVE' };
+
+    // Private programs logic: only owners or invited researchers can see them
+    if (req.user && !['ADMIN', 'SUPER_ADMIN'].includes(req.user.role)) {
+      whereClause.OR = [
         { type: 'PUBLIC' },
-        // If user is logged in, include Private programs they are invited to
-        userId ? {
+        {
           type: 'PRIVATE',
-          invitedResearchers: {
-            some: { id: userId }
-          }
-        } : undefined
-      ].filter(Boolean)
-    };
+          OR: [
+            { companyId: effectiveId },
+            { invitedResearchers: { some: { id: userId } } }
+          ]
+        }
+      ];
+    } else if (!req.user) {
+      // Unauthenticated users only see public programs
+      whereClause.type = 'PUBLIC';
+    }
+    
+    // Type filter from query
+    if (filterType) {
+      whereClause.type = filterType.toUpperCase();
+    }
 
     const programs = await prisma.program.findMany({
       where: whereClause,
@@ -66,14 +89,39 @@ exports.getAllPrograms = async (req, res) => {
             email: true,
           },
         },
+        _count: {
+          select: { reports: true }
+        }
       },
       orderBy: { createdAt: 'desc' }
     });
 
-    res.json(programs);
+    // Post-process to filter by Min Bounty and sanitize
+    const filteredAndSanitized = programs.filter(p => {
+      // 1. Min Bounty Filtering (String parsing)
+      if (minBounty && p.rewards) {
+        const amount = parseInt(minBounty);
+        // Extract all numbers from rewards string (e.g. "$1,000 - $5,000")
+        const rewardNumbers = p.rewards.replace(/,/g, '').match(/\d+/g);
+        if (rewardNumbers) {
+          const maxRewardInProgram = Math.max(...rewardNumbers.map(Number));
+          if (maxRewardInProgram < amount) return false;
+        }
+      }
+      return true;
+    }).map(p => {
+      // 2. Sanitization: Only include invitedResearchers for the owner
+      const { invitedResearchers, ...rest } = p;
+      if (rest.companyId !== userId) {
+        return rest;
+      }
+      return p;
+    });
+
+    res.json(filteredAndSanitized);
   } catch (error) {
     console.error('Get Programs Error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error', detail: error.message });
   }
 };
 
@@ -85,6 +133,17 @@ exports.getProgramById = async (req, res) => {
       where: { id },
       include: {
         company: { select: { firstName: true, email: true } },
+        invitedResearchers: { 
+          select: { 
+            id: true, 
+            firstName: true, 
+            lastName: true, 
+            email: true 
+          } 
+        },
+        bookmarks: {
+          where: { userId: req.user.id }
+        }
       },
     });
 
@@ -92,10 +151,26 @@ exports.getProgramById = async (req, res) => {
       return res.status(404).json({ message: 'Program not found' });
     }
 
+    // Access Control for Private Programs
+    if (program.type === 'PRIVATE') {
+      const userId = req.user.id;
+      const isOwner = program.companyId === userId;
+      const isInvited = await prisma.program.findFirst({
+        where: {
+          id,
+          invitedResearchers: { some: { id: userId } }
+        }
+      });
+
+      if (!isOwner && !isInvited && req.user.role !== 'ADMIN' && req.user.role !== 'SUPER_ADMIN') {
+        return res.status(403).json({ message: 'This is a private program. Access denied.' });
+      }
+    }
+
     res.json(program);
   } catch (error) {
     console.error('Get Program Error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error', detail: error.message });
   }
 };
 
@@ -103,17 +178,29 @@ exports.getProgramById = async (req, res) => {
 exports.updateProgram = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, scope, rules, rewards, status } = req.body;
+    const companyId = req.user.parentId || req.user.id;
+    const { 
+      name, description, scope, rules, rewards, status,
+      slaFirstResponse, slaTriage, slaResolution,
+      disclosurePolicy, safeHarbor
+    } = req.body;
 
     const existingProgram = await prisma.program.findUnique({ where: { id } });
 
-    if (!existingProgram || existingProgram.companyId !== req.user.id) {
+    if (!existingProgram || existingProgram.companyId !== companyId) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
     const program = await prisma.program.update({
       where: { id },
-      data: { name, description, scope, rules, rewards, status }
+      data: { 
+        name, description, scope, rules, rewards, status,
+        slaFirstResponse: slaFirstResponse ? parseInt(slaFirstResponse) : undefined,
+        slaTriage: slaTriage ? parseInt(slaTriage) : undefined,
+        slaResolution: slaResolution ? parseInt(slaResolution) : undefined,
+        disclosurePolicy,
+        safeHarbor
+      }
     });
 
     await auditService.record({
@@ -135,10 +222,11 @@ exports.inviteResearcher = async (req, res) => {
   try {
     const { id } = req.params; // Program ID
     const { researcherEmail } = req.body;
+    const companyId = req.user.parentId || req.user.id;
 
     const program = await prisma.program.findUnique({ where: { id } });
 
-    if (!program || program.companyId !== req.user.id) {
+    if (!program || program.companyId !== companyId) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
