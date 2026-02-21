@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const prisma = require('../utils/prisma');
 const emailService = require('../services/email.service');
 const auditService = require('../services/audit.service');
+const notificationService = require('../services/notification.service');
 const crypto = require('crypto');
 
 const register = async (req, res) => {
@@ -610,6 +611,27 @@ const registerCompany = async (req, res) => {
       where: { id: invite.id },
       data: { used: true }
     });
+
+    // 5. Notify all Admins/Super Admins about new company registration
+    try {
+      const admins = await prisma.user.findMany({
+        where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] }, isActive: true },
+        select: { id: true }
+      });
+      const notifications = admins.map(admin => ({
+        userId: admin.id,
+        title: '🏢 New Company Registration',
+        message: `A new company account (${invite.email}) has registered and is waiting for your approval.`,
+        type: 'INFO',
+        isRead: false,
+        relatedReportId: null
+      }));
+      if (notifications.length > 0) {
+        await prisma.notification.createMany({ data: notifications });
+      }
+    } catch (notifErr) {
+      console.error('Admin notification failed on company register:', notifErr.message);
+    }
 
     res.status(201).json({ 
       message: 'Registration successful. Your account is now pending administrative approval.',

@@ -2,6 +2,8 @@ const prisma = require('../utils/prisma');
 const emailService = require('../services/email.service');
 const slaService = require('../services/sla.service');
 const auditService = require('../services/audit.service');
+const notificationService = require('../services/notification.service');
+
 
 // Get statistics for admin dashboard
 exports.getAdminStats = async (req, res) => {
@@ -647,7 +649,21 @@ exports.approveUser = async (req, res) => {
       data: { isActive: true }
     });
 
-    await emailService.sendApprovalEmail(user.email);
+    // Send approval welcome email
+    try {
+      await emailService.sendApprovalEmail(user.email);
+    } catch (emailErr) {
+      console.error('Approval email send failed:', emailErr.message);
+      // Don't block the response — approval is already done
+    }
+
+    // Also create in-app notification for the approved user
+    await notificationService.notifyUser(
+      user.id,
+      '🎉 Account Approved!',
+      'Congratulations! Your account has been approved. You can now log in and start using XploitArena.',
+      'SUCCESS'
+    );
 
     res.json({ message: 'User approved and notified' });
   } catch (error) {
