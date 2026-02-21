@@ -352,11 +352,29 @@ exports.toggleUserStatus = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    const newIsActive = isActive !== undefined ? isActive : !user.isActive;
+
     // Update active status
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: { isActive: isActive !== undefined ? isActive : !user.isActive }
+      data: { isActive: newIsActive }
     });
+
+    // If account was just activated, send welcome email and notification
+    if (!user.isActive && newIsActive) {
+      try {
+        await emailService.sendApprovalEmail(user.email);
+        
+        await notificationService.notifyUser(
+          user.id,
+          '🎉 Account Approved!',
+          'Congratulations! Your account has been approved. You can now log in and start using XploitArena.',
+          'SUCCESS'
+        );
+      } catch (err) {
+        console.error('Failed to send welcome email/notification on toggle:', err.message);
+      }
+    }
 
     res.json({ 
       message: `User ${updatedUser.isActive ? 'activated' : 'deactivated'} successfully`,
@@ -729,10 +747,41 @@ exports.bulkToggleUserStatus = async (req, res) => {
       return res.status(400).json({ message: 'Invalid user IDs' });
     }
 
+    // If activating, find users who are currently inactive to send welcome emails
+    let usersToNotify = [];
+    if (isActive) {
+      usersToNotify = await prisma.user.findMany({
+        where: { id: { in: userIds }, isActive: false },
+        select: { id: true, email: true }
+      });
+    }
+
     await prisma.user.updateMany({
       where: { id: { in: userIds } },
       data: { isActive: !!isActive }
     });
+
+    // Send notifications and emails
+    if (isActive && usersToNotify.length > 0) {
+      const notifications = usersToNotify.map(u => ({
+        userId: u.id,
+        title: '🎉 Account Approved!',
+        message: 'Congratulations! Your account has been approved. You can now log in and start using XploitArena.',
+        type: 'SUCCESS',
+        isRead: false
+      }));
+      
+      try {
+        await prisma.notification.createMany({ data: notifications });
+        
+        // Send emails in parallel without blocking response
+        Promise.allSettled(
+          usersToNotify.map(u => emailService.sendApprovalEmail(u.email))
+        ).catch(e => console.error('Bulk email error:', e));
+      } catch (err) {
+        console.error('Bulk notification layout error:', err);
+      }
+    }
 
     await auditService.record({
       action: 'BULK_USER_STATUS_TOGGLE',
@@ -741,9 +790,9 @@ exports.bulkToggleUserStatus = async (req, res) => {
       ipAddress: req.ip
     });
 
-    res.json({ message: `Status updated for ${userIds.length} users` });
+    res.json({ message: `Updated ${userIds.length} users successfully` });
   } catch (error) {
-    console.error('Bulk Toggle Status Error:', error);
+    console.error('Bulk Toggle User Status Error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
