@@ -714,6 +714,13 @@ exports.approveKyb = async (req, res) => {
       data: { kybStatus: 'VERIFIED' }
     });
 
+    await notificationService.notifyUser(
+      id,
+      '✅ KYB Approved',
+      'Your company verification (KYB) has been approved. You can now publish programs and pay bounties.',
+      'SUCCESS'
+    );
+
     res.json({ message: 'Company KYB approved successfully' });
   } catch (error) {
     console.error('Approve KYB Error:', error);
@@ -730,6 +737,13 @@ exports.rejectKyb = async (req, res) => {
       where: { id },
       data: { kybStatus: 'REJECTED' }
     });
+
+    await notificationService.notifyUser(
+      id,
+      '❌ KYB Rejected',
+      'Your company verification (KYB) was rejected. Please review your details and re-submit or contact support.',
+      'ERROR'
+    );
 
     res.json({ message: 'Company KYB rejected' });
   } catch (error) {

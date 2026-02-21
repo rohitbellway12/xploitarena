@@ -80,6 +80,14 @@ exports.submitReport = async (req, res) => {
       report.id
     );
 
+    await notificationService.notifyUser(
+      researcherId,
+      '📤 Report Submitted',
+      `Your report "${report.title}" has been successfully submitted to ${report.program.name}.`,
+      'SUCCESS',
+      report.id
+    );
+
     res.status(201).json({
       message: 'Report submitted successfully',
       report,

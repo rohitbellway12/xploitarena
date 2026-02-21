@@ -54,7 +54,23 @@ const register = async (req, res) => {
       const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email/${verificationToken}`;
       await emailService.sendVerificationEmail(user.email, verifyUrl);
       
-      // We can also send the 2FA code if they try to login before verifying
+      // Notify all Admins about new registration
+      const admins = await prisma.user.findMany({
+        where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] }, isActive: true },
+        select: { id: true }
+      });
+
+      const notifications = admins.map(admin => ({
+        userId: admin.id,
+        title: '👤 New User Registered',
+        message: `A new ${user.role} (${user.email}) has registered and is waiting for approval.`,
+        type: 'INFO',
+        isRead: false
+      }));
+
+      if (notifications.length > 0) {
+        await prisma.notification.createMany({ data: notifications });
+      }
     } catch (emailError) {
       console.error('Failed to send verification email:', emailError);
       // We don't fail registration, but user will need to resend verification or contact support

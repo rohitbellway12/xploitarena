@@ -249,6 +249,14 @@ exports.inviteResearcher = async (req, res) => {
       }
     });
 
+    await notificationService.notifyUser(
+      researcher.id,
+      '📩 Private Program Invitation',
+      `You have been invited to participate in the private program: ${program.name}.`,
+      'INFO',
+      null
+    );
+
     await auditService.record({
       action: 'PROGRAM_INVITATION_SENT',
       userId: req.user.id,
