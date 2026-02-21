@@ -1,5 +1,6 @@
 const prisma = require('../utils/prisma');
 const auditService = require('../services/audit.service');
+const notificationService = require('../services/notification.service');
 
 // Add a comment to a report
 exports.addComment = async (req, res) => {
@@ -54,6 +55,27 @@ exports.addComment = async (req, res) => {
       details: { isInternal },
       ipAddress: req.ip
     });
+
+    // Send notification
+    if (isResearcher) {
+      // Researcher commented, notify company
+      await notificationService.notifyCompanyAdmins(
+        report.program.companyId,
+        'New Comment on Report',
+        `The researcher added a comment to report "${report.title}".`,
+        'INFO',
+        report.id
+      );
+    } else if (!isInternal) {
+      // Company or Triager commented publicly, notify researcher
+      await notificationService.notifyUser(
+        report.researcherId,
+        'New Comment on Report',
+        `A new comment was added to your report "${report.title}".`,
+        'INFO',
+        report.id
+      );
+    }
 
     res.status(201).json(comment);
   } catch (error) {

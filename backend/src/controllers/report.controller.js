@@ -1,6 +1,7 @@
 const prisma = require('../utils/prisma');
 const auditService = require('../services/audit.service');
 const emailService = require('../services/email.service');
+const notificationService = require('../services/notification.service');
 
 // Submit a new report
 exports.submitReport = async (req, res) => {
@@ -59,7 +60,7 @@ exports.submitReport = async (req, res) => {
         status: status === 'DRAFT' ? 'DRAFT' : 'SUBMITTED',
       },
       include: {
-        program: { select: { name: true } }
+        program: { select: { name: true, companyId: true } }
       }
     });
 
@@ -70,6 +71,14 @@ exports.submitReport = async (req, res) => {
       details: { title: report.title, program: report.program.name, eventId },
       ipAddress: req.ip
     });
+
+    await notificationService.notifyCompanyAdmins(
+      program.companyId,
+      'New Report Submitted',
+      `A new report "${report.title}" was submitted to ${report.program.name}.`,
+      'INFO',
+      report.id
+    );
 
     res.status(201).json({
       message: 'Report submitted successfully',
@@ -214,6 +223,14 @@ exports.updateReportStatus = async (req, res) => {
       details: { from: report.status, to: status },
       ipAddress: req.ip
     });
+
+    await notificationService.notifyUser(
+      report.researcherId,
+      `Report Status Changed: ${status}`,
+      `Your report "${report.title}" has been moved to ${status}.`,
+      'REPORT_UPDATE',
+      report.id
+    );
 
     res.json({ message: 'Status updated', report: updatedReport });
   } catch (error) {
@@ -372,6 +389,14 @@ exports.payBounty = async (req, res) => {
       details: { amount: amount },
       ipAddress: req.ip
     });
+
+    await notificationService.notifyUser(
+      report.researcherId,
+      'Bounty Awarded! 💰',
+      `Congratulations! You have been awarded $${amount} for your report "${report.title}".`,
+      'SUCCESS',
+      report.id
+    );
 
     res.json({ message: 'Bounty paid successfully' });
   } catch (error) {
