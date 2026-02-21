@@ -157,9 +157,11 @@ export default function EventsPage() {
               {filteredEvents.map((event, index) => {
                 const live = isEventLive(event.startDate, event.endDate);
                 const upcoming = isUpcoming(event.startDate);
-                const durationDays = Math.ceil(
-                  (new Date(event.endDate).getTime() - new Date(event.startDate).getTime()) / (1000 * 60 * 60 * 24)
-                );
+                const start = event.startDate ? new Date(event.startDate) : null;
+                const end = event.endDate ? new Date(event.endDate) : null;
+                const durationDays = (start && end && !isNaN(start.getTime()) && !isNaN(end.getTime())) 
+                  ? Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+                  : 0;
 
                 return (
                   <motion.div key={event.id}
@@ -205,7 +207,9 @@ export default function EventsPage() {
                             <Calendar className="w-3 h-3 text-indigo-400" /> Start Date
                           </div>
                           <p className="text-sm font-black text-[hsl(var(--text-main))]">
-                            {new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            {event.startDate && !isNaN(new Date(event.startDate).getTime())
+                              ? new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                              : 'TBA'}
                           </p>
                         </div>
                         <div className="bg-[hsl(var(--bg-main))] rounded-2xl p-3 space-y-1">

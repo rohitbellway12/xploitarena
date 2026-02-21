@@ -63,6 +63,7 @@ function App() {
             <Route path="/researcher/leaderboard" element={<LeaderboardPage />} />
             <Route path="/researcher/submissions" element={<ResearcherSubmissionsPage />} />
             <Route path="/researcher/events" element={<EventsPage />} />
+            <Route path="/events" element={<EventsPage />} />
             <Route path="/researcher/teams" element={<ResearcherTeamsPage />} />
             <Route path="/programs/:id" element={<ProgramDetailPage />} />
             <Route path="/programs/:programId/submit" element={<SubmitReportPage />} />
