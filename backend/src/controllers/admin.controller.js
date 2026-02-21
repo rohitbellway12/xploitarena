@@ -417,14 +417,22 @@ exports.inviteCompany = async (req, res) => {
       return res.status(400).json({ message: 'A user with this email already exists' });
     }
 
-    // Check if a pending invitation already exists
-    const existingInvite = await prisma.invitation.findFirst({
-      where: { email, used: false, expiresAt: { gt: new Date() } }
-    });
+    // Check if an invitation already exists (used or expired)
+    let invite = await prisma.invitation.findUnique({ where: { email } });
 
-    let invite;
-    if (existingInvite) {
-      invite = existingInvite;
+    if (invite) {
+      if (!invite.used && invite.expiresAt > new Date()) {
+        // Invite is still valid and pending, just resend it
+        console.log(`Resending valid invitation to ${email}`);
+      } else {
+        // Invite is used or expired, regenerate token and reset expiresAt
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
+        invite = await prisma.invitation.update({
+          where: { email },
+          data: { token, expiresAt, used: false }
+        });
+      }
     } else {
       // Create new invitation
       const token = crypto.randomBytes(32).toString('hex');
