@@ -364,10 +364,10 @@ export default function SettingsPage() {
                                     formData.append('file', file);
                                     setUpdating(true);
                                     try {
-                                      const res = await api.post('/api/upload', formData, {
+                                      const res = await api.post('/upload', formData, {
                                         headers: { 'Content-Type': 'multipart/form-data' }
                                       });
-                                      const logoUrl = res.data.file.url;
+                                      const logoUrl = `${SERVER_URL}${res.data.file.url}`;
                                       const newBranding = { ...branding, logo: logoUrl };
                                       setBranding(newBranding);
                                       await api.post('/settings/update', { key: 'branding_config', value: newBranding });
