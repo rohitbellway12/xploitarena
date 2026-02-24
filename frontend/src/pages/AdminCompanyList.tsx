@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
-import { ChevronLeft, ChevronRight, Search, X, Mail, Calendar, Briefcase, ExternalLink, Send, Shield, UserPlus, Globe, Phone, MapPin, Info, ArrowUpRight, Activity, Zap, Eye, Check, Trash2, Users, Ban, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, X, Mail, Send, Shield, UserPlus, Globe, Phone, ArrowUpRight, Activity, Zap, Eye, Check, Trash2, Ban, CheckCircle } from 'lucide-react';
 import api from '../api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';

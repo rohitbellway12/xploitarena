@@ -11,9 +11,7 @@ import {
   Key,
   Mail,
   Zap,
-  Palette,
-  Globe,
-  X
+  Palette
 } from 'lucide-react';
 import api from '../api/axios';
 import { toast } from 'react-hot-toast';
