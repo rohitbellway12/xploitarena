@@ -25,8 +25,10 @@ export default function SettingsPage() {
   
   const [smtp, setSmtp] = useState({ host: '', port: '', user: '', pass: '', secure: false });
   const [traffic, setTraffic] = useState({ apiLimit: 100, lockoutTime: 15 });
-  const [branding, setBranding] = useState({ title: 'XploitArena' });
+  const [branding, setBranding] = useState({ title: 'XploitArena', logo: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  const SERVER_URL = API_BASE_URL.replace('/api', '');
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -355,20 +357,41 @@ export default function SettingsPage() {
                                 ref={fileInputRef} 
                                 className="hidden" 
                                 accept="image/*"
-                                onChange={(e) => {
+                                onChange={async (e) => {
                                   const file = e.target.files?.[0];
                                   if (file) {
-                                    toast.success(`Logo selected: ${file.name}`);
-                                    // In a real app, you'd upload this to a server/S3
+                                    const formData = new FormData();
+                                    formData.append('file', file);
+                                    setUpdating(true);
+                                    try {
+                                      const res = await api.post('/api/upload', formData, {
+                                        headers: { 'Content-Type': 'multipart/form-data' }
+                                      });
+                                      const logoUrl = res.data.file.url;
+                                      const newBranding = { ...branding, logo: logoUrl };
+                                      setBranding(newBranding);
+                                      await api.post('/settings/update', { key: 'branding_config', value: newBranding });
+                                      toast.success('Logo uploaded and saved');
+                                    } catch (err) {
+                                      toast.error('Logo upload failed');
+                                    } finally {
+                                      setUpdating(false);
+                                    }
                                   }
                                 }} 
                               />
                               <div 
                                 onClick={() => fileInputRef.current?.click()}
-                                className="w-24 h-24 rounded-2xl bg-white/5 border border-dashed border-[hsl(var(--border-subtle))] flex flex-col items-center justify-center gap-1 group cursor-pointer hover:border-indigo-500/40 transition-colors"
+                                className="w-24 h-24 rounded-2xl bg-white/5 border border-dashed border-[hsl(var(--border-subtle))] flex flex-col items-center justify-center gap-1 group cursor-pointer hover:border-indigo-500/40 transition-colors overflow-hidden"
                               >
-                                 <Palette className="w-5 h-5 text-[hsl(var(--text-muted))] group-hover:text-indigo-400" />
-                                 <span className="text-[9px] font-bold text-[hsl(var(--text-muted))]">New Logo</span>
+                                 {branding.logo ? (
+                                   <img src={branding.logo} alt="Logo" className="w-full h-full object-cover" />
+                                 ) : (
+                                   <>
+                                     <Palette className="w-5 h-5 text-[hsl(var(--text-muted))] group-hover:text-indigo-400" />
+                                     <span className="text-[9px] font-bold text-[hsl(var(--text-muted))]">New Logo</span>
+                                   </>
+                                 )}
                               </div>
                               <div className="flex-1 space-y-4">
                                  <div className="space-y-1">
