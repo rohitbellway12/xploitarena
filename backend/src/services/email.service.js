@@ -1,56 +1,64 @@
 const nodemailer = require('nodemailer');
+const settingService = require('./setting.service');
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.EMAIL_PORT) || 587,
-  secure: false,      // false = STARTTLS on port 587
-  requireTLS: true,   // Force STARTTLS upgrade
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false // Allow self-signed certs (for VPS compatibility)
-  },
-  connectionTimeout: 10000,  // 10 second connection timeout
-  greetingTimeout: 10000,    // 10 second greeting timeout
-  socketTimeout: 15000,      // 15 second socket timeout
-});
+const getConfig = async () => {
+  const settings = await settingService.get('smtp_config');
+  
+  return {
+    host: settings?.host || process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: parseInt(settings?.port || process.env.EMAIL_PORT) || 587,
+    secure: settings?.secure ?? false,
+    requireTLS: true,
+    auth: {
+      user: settings?.user || process.env.EMAIL_USER,
+      pass: settings?.pass || process.env.EMAIL_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false
+    },
+    fromName: 'XploitArena'
+  };
+};
 
-// Verify connection on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ Email transporter FAILED to connect:', error.message);
-    console.error('   EMAIL_HOST:', process.env.EMAIL_HOST);
-    console.error('   EMAIL_PORT:', process.env.EMAIL_PORT);
-    console.error('   EMAIL_USER:', process.env.EMAIL_USER);
-  } else {
-    console.log('✅ Email transporter connected successfully. Ready to send emails.');
+const getTransporter = async (config) => {
+  return nodemailer.createTransport(config);
+};
+
+// Initial verification on startup using env as default
+(async () => {
+  try {
+    const config = await getConfig();
+    const transporter = await getTransporter(config);
+    await transporter.verify();
+    console.log('✅ Email transporter connected successfully.');
+  } catch (error) {
+    console.error('❌ Email transporter verification failed:', error.message);
   }
-});
+})();
 
 exports.send2FACode = async (to, code) => {
-  console.log(`Sending 2FA code to ${to}...`);
-  const mailOptions = {
-    from: `"XploitArena Security" <${process.env.EMAIL_USER}>`,
-    to,
-    subject: 'Your 2FA Verification Code - XploitArena',
-    html: `
-      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #1e293b; border-radius: 12px; background-color: #0f172a; color: #f8fafc;">
-        <h2 style="color: #6366f1; text-align: center;">XploitArena Security</h2>
-        <p>Hello,</p>
-        <p>You recently attempted to log in to XploitArena. Please use the following code to complete your authentication:</p>
-        <div style="background-color: #1e293b; color: #ffffff; font-size: 32px; font-weight: bold; text-align: center; padding: 20px; border-radius: 8px; margin: 25px 0; letter-spacing: 5px;">
-          ${code}
-        </div>
-        <p style="font-size: 14px; color: #94a3b8;">This code will expire in 10 minutes. If you did not request this, please change your password immediately.</p>
-        <hr style="border: 0; border-top: 1px solid #1e293b; margin: 20px 0;">
-        <p style="font-size: 12px; text-align: center; color: #64748b;">&copy; 2026 XploitArena. All rights reserved.</p>
-      </div>
-    `,
-  };
-
   try {
+    const config = await getConfig();
+    const mailOptions = {
+      from: `"${config.fromName}" <${config.auth.user}>`,
+      to,
+      subject: 'Your 2FA Verification Code - XploitArena',
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #1e293b; border-radius: 12px; background-color: #0f172a; color: #f8fafc;">
+          <h2 style="color: #6366f1; text-align: center;">XploitArena Security</h2>
+          <p>Hello,</p>
+          <p>You recently attempted to log in to XploitArena. Please use the following code to complete your authentication:</p>
+          <div style="background-color: #1e293b; color: #ffffff; font-size: 32px; font-weight: bold; text-align: center; padding: 20px; border-radius: 8px; margin: 25px 0; letter-spacing: 5px;">
+            ${code}
+          </div>
+          <p style="font-size: 14px; color: #94a3b8;">This code will expire in 10 minutes. If you did not request this, please change your password immediately.</p>
+          <hr style="border: 0; border-top: 1px solid #1e293b; margin: 20px 0;">
+          <p style="font-size: 12px; text-align: center; color: #64748b;">&copy; 2026 XploitArena. All rights reserved.</p>
+        </div>
+      `,
+    };
+
+    const transporter = await getTransporter(config);
     const info = await transporter.sendMail(mailOptions);
     console.log(`✅ 2FA Email sent successfully to ${to}. MessageId: ${info.messageId}`);
     return info;
@@ -61,8 +69,9 @@ exports.send2FACode = async (to, code) => {
 };
 
 exports.sendPasswordResetEmail = async (to, resetUrl) => {
+  const config = await getConfig();
   const mailOptions = {
-    from: `"XploitArena Security" <${process.env.EMAIL_USER}>`,
+    from: `"${config.fromName} Security" <${config.auth.user}>`,
     to,
     subject: 'Password Reset Request - XploitArena',
     html: `
@@ -80,12 +89,14 @@ exports.sendPasswordResetEmail = async (to, resetUrl) => {
     `,
   };
 
+  const transporter = await getTransporter(config);
   return transporter.sendMail(mailOptions);
 };
 
 exports.sendVerificationEmail = async (to, verifyUrl) => {
+  const config = await getConfig();
   const mailOptions = {
-    from: `"XploitArena Accounts" <${process.env.EMAIL_USER}>`,
+    from: `"${config.fromName} Accounts" <${config.auth.user}>`,
     to,
     subject: 'Verify Your Email Address - XploitArena',
     html: `
@@ -103,12 +114,14 @@ exports.sendVerificationEmail = async (to, verifyUrl) => {
     `,
   };
 
+  const transporter = await getTransporter(config);
   return transporter.sendMail(mailOptions);
 };
 
 exports.sendInvitationEmail = async (to, inviteUrl, customMessage) => {
+  const config = await getConfig();
   const mailOptions = {
-    from: `"XploitArena Administration" <${process.env.EMAIL_USER}>`,
+    from: `"${config.fromName} Administration" <${config.auth.user}>`,
     to,
     subject: 'Secure Invitation to Join XploitArena Program',
     html: `
@@ -141,12 +154,14 @@ exports.sendInvitationEmail = async (to, inviteUrl, customMessage) => {
     `,
   };
 
+  const transporter = await getTransporter(config);
   return transporter.sendMail(mailOptions);
 };
 
 exports.sendApprovalEmail = async (to) => {
+  const config = await getConfig();
   const mailOptions = {
-    from: `"XploitArena Administration" <${process.env.EMAIL_USER}>`,
+    from: `"${config.fromName} Administration" <${config.auth.user}>`,
     to,
     subject: 'Your Company Account Has Been Approved!',
     html: `
@@ -164,12 +179,14 @@ exports.sendApprovalEmail = async (to) => {
     `,
   };
 
+  const transporter = await getTransporter(config);
   return transporter.sendMail(mailOptions);
 };
 
 exports.sendSlaBreachEmail = async (to, reportTitle, programName, deadline) => {
+  const config = await getConfig();
   const mailOptions = {
-    from: `"XploitArena Monitor" <${process.env.EMAIL_USER}>`,
+    from: `"${config.fromName} Monitor" <${config.auth.user}>`,
     to,
     subject: `🚨 URGENT: SLA Breach - ${reportTitle}`,
     html: `
@@ -191,12 +208,14 @@ exports.sendSlaBreachEmail = async (to, reportTitle, programName, deadline) => {
     `,
   };
 
+  const transporter = await getTransporter(config);
   return transporter.sendMail(mailOptions);
 };
 
 exports.sendBudgetAlertEmail = async (to, programName, percentage, remainingBudget) => {
+  const config = await getConfig();
   const mailOptions = {
-    from: `"XploitArena Billing" <${process.env.EMAIL_USER}>`,
+    from: `"${config.fromName} Billing" <${config.auth.user}>`,
     to,
     subject: `⚠️ Budget Alert: ${percentage}% Consumed - ${programName}`,
     html: `
@@ -221,11 +240,14 @@ exports.sendBudgetAlertEmail = async (to, programName, percentage, remainingBudg
     `,
   };
 
+  const transporter = await getTransporter(config);
   return transporter.sendMail(mailOptions);
 };
+
 exports.sendSlaEscalationEmail = async (to, reportTitle, programName, companyName, deadline) => {
+  const config = await getConfig();
   const mailOptions = {
-    from: `"XploitArena Compliance" <${process.env.EMAIL_USER}>`,
+    from: `"${config.fromName} Compliance" <${config.auth.user}>`,
     to,
     subject: `⚠️ ESCALATION: Critical SLA Breach - ${reportTitle}`,
     html: `
@@ -243,10 +265,11 @@ exports.sendSlaEscalationEmail = async (to, reportTitle, programName, companyNam
           <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/admin/dashboard" style="background-color: #991b1b; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">Enter Admin Console</a>
         </div>
         <hr style="border: 0; border-top: 1px solid #1e293b; margin: 20px 0;">
-        <p style="font-size: 12px; text-align: center; color: #64748b;">&copy; 2026 XploitArena Management. All rights reserved.</p>
+        <p style="font-size: 11px; text-align: center; color: #64748b; line-height: 1.5;">You received this because an administrator invited your email to join the platform. <br> &copy; 2026 XploitArena Management. All rights reserved.</p>
       </div>
     `,
   };
 
+  const transporter = await getTransporter(config);
   return transporter.sendMail(mailOptions);
 };

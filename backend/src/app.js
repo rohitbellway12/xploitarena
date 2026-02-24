@@ -68,6 +68,7 @@ app.use('/api/comments', require('./routes/comment.routes'));
 app.use('/api/employees', require('./routes/employee.routes'));
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/inbox', notificationRoutes);
+app.use('/api/settings', require('./routes/settings.routes'));
 
 // ---- Error Handling Middleware (Always at the end) ----
 app.use((err, req, res, next) => {

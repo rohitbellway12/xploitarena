@@ -123,6 +123,11 @@ exports.getCompanies = async (req, res) => {
         email: true,
         firstName: true,
         lastName: true,
+        username: true,
+        website: true,
+        address: true,
+        phone: true,
+        biography: true,
         isVerified: true,
         isActive: true,
         createdAt: true,
@@ -653,11 +658,36 @@ exports.getPendingApprovals = async (req, res) => {
           isActive: false,
           isVerified: true 
         },
-        select: { id: true, email: true, firstName: true, lastName: true, role: true, createdAt: true }
+        select: { 
+          id: true, 
+          email: true, 
+          firstName: true, 
+          lastName: true, 
+          role: true, 
+          createdAt: true,
+          username: true,
+          website: true,
+          address: true,
+          phone: true,
+          biography: true
+        }
       }),
       prisma.user.findMany({
         where: { kybStatus: 'PENDING' },
-        select: { id: true, email: true, firstName: true, lastName: true, role: true, createdAt: true, kybStatus: true }
+        select: { 
+          id: true, 
+          email: true, 
+          firstName: true, 
+          lastName: true, 
+          role: true, 
+          createdAt: true, 
+          kybStatus: true,
+          username: true,
+          website: true,
+          address: true,
+          phone: true,
+          biography: true
+        }
       })
     ]);
 

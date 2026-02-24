@@ -3,9 +3,9 @@ const rateLimit = require('express-rate-limit');
 // General API rate limiter
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  max: 1000, // Increased from 100 to 1000 for better dev/admin experience
+  standardHeaders: true, 
+  legacyHeaders: false, 
   message: {
     message: 'Too many requests from this IP, please try again after 15 minutes',
   },
@@ -14,7 +14,7 @@ const apiLimiter = rateLimit({
 // Strict rate limiter for Auth routes (Login/Register/Reset)
 const authLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 100, // Limit each IP to 100 login/register attempts per hour
+  max: 200, // Increased from 100 to 200
   standardHeaders: true,
   legacyHeaders: false,
   message: {

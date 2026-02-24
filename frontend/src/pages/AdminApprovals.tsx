@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 import api from "../api/axios";
 import { toast } from "react-hot-toast";
-import { Inbox, Check, X, ShieldAlert, Clock, User } from "lucide-react";
+import { Inbox, Check, X, ShieldAlert, Clock, User, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface PendingItem {
@@ -13,6 +13,11 @@ interface PendingItem {
   role: string;
   createdAt: string;
   kybStatus?: string;
+  username?: string;
+  website?: string;
+  address?: string;
+  phone?: string;
+  biography?: string;
 }
 
 export default function AdminApprovals() {
@@ -62,11 +67,114 @@ export default function AdminApprovals() {
     }
   };
 
+  const [selectedItem, setSelectedItem] = useState<PendingItem | null>(null);
+
   const currentItems = activeTab === 'USERS' ? data.users : data.kyb;
 
   return (
     <DashboardLayout>
       <div className="w-full max-w-5xl mx-auto space-y-8 pb-10">
+        {/* Detailed View Modal */}
+        <AnimatePresence>
+          {selectedItem && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl"
+              >
+                <div className="p-8 border-b border-[hsl(var(--border-subtle))] flex items-center justify-between bg-indigo-500/5">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl font-black">
+                      {selectedItem.firstName[0]}{selectedItem.lastName[0]}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-[hsl(var(--text-main))] uppercase tracking-tight">{selectedItem.firstName} {selectedItem.lastName}</h3>
+                      <p className="text-xs text-[hsl(var(--text-muted))] font-bold uppercase tracking-widest mt-1 opacity-70">{selectedItem.role.replace('_', ' ')} Profile</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedItem(null)} 
+                    className="p-3 bg-white/5 hover:bg-white/10 text-[hsl(var(--text-muted))] hover:text-white rounded-2xl transition-all"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                
+                <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Contact Email</p>
+                      <p className="text-sm font-bold text-[hsl(var(--text-main))]">{selectedItem.email}</p>
+                    </div>
+                    {selectedItem.username && (
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Platform Username</p>
+                        <p className="text-sm font-bold text-[hsl(var(--text-main))]">@{selectedItem.username}</p>
+                      </div>
+                    )}
+                    {selectedItem.website && (
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Corporate Website</p>
+                        <a href={selectedItem.website} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-indigo-400 hover:underline">{selectedItem.website}</a>
+                      </div>
+                    )}
+                    {selectedItem.phone && (
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Phone Number</p>
+                        <p className="text-sm font-bold text-[hsl(var(--text-main))]">{selectedItem.phone}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedItem.address && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Business Address</p>
+                      <p className="text-sm font-bold text-[hsl(var(--text-main))] leading-relaxed">{selectedItem.address}</p>
+                    </div>
+                  )}
+
+                  {selectedItem.biography && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">About / Biography</p>
+                      <p className="text-xs text-[hsl(var(--text-muted))] leading-relaxed font-medium">{selectedItem.biography}</p>
+                    </div>
+                  )}
+
+                  <div className="pt-4 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-indigo-500" />
+                    <span className="text-[10px] font-black text-[hsl(var(--text-muted))] uppercase tracking-widest">Registered: {new Date(selectedItem.createdAt).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="p-8 border-t border-[hsl(var(--border-subtle))] bg-white/5 flex gap-4">
+                  <button
+                    onClick={() => {
+                      activeTab === 'USERS' ? handleApprove(selectedItem.id) : handleKybAction(selectedItem.id, 'approve');
+                      setSelectedItem(null);
+                    }}
+                    disabled={processingId === selectedItem.id}
+                    className="flex-1 px-4 py-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-500/20 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Check className="w-5 h-5" />
+                    Approve Request
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (activeTab === 'KYB') handleKybAction(selectedItem.id, 'reject');
+                      setSelectedItem(null);
+                    }}
+                    className="px-6 py-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 rounded-2xl transition-all"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
         <div className="border-b border-[hsl(var(--border-subtle))] pb-8">
           <div className="flex items-center gap-2 mb-2">
              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500 text-white uppercase tracking-wider">Access Control</span>
@@ -140,9 +248,18 @@ export default function AdminApprovals() {
                       <User className="w-3 h-3" />
                       Role: {item.role.replace('_', ' ')}
                     </div>
+                    
+                    <button 
+                      onClick={() => setSelectedItem(item)}
+                      className="flex items-center gap-2 text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-indigo-300 transition-colors group/btn"
+                    >
+                      View Detailed Profile
+                      <ChevronRight className="w-3 h-3 group-hover/btn:translate-x-1 transition-transform" />
+                    </button>
+                    
                     {activeTab === 'KYB' && (
-                       <button className="flex items-center gap-2 text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-indigo-300 transition-colors">
-                          View Uploaded Documents
+                       <button className="flex items-center gap-2 text-[10px] font-black text-amber-400 uppercase tracking-widest hover:text-amber-300 transition-colors">
+                          Inspect KYB Documents
                        </button>
                     )}
                   </div>

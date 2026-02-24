@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/axios";
 import { toast } from "react-hot-toast";
-import { Building2, ShieldCheck, Mail, User, Lock, ArrowRight } from "lucide-react";
+import { Building2, ShieldCheck, User, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function CompanyRegistrationPage() {
@@ -13,6 +13,11 @@ export default function CompanyRegistrationPage() {
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
+  const [website, setWebsite] = useState("");
+  const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
+  const [biography, setBiography] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,6 +52,11 @@ export default function CompanyRegistrationPage() {
         token,
         firstName,
         lastName,
+        username,
+        website,
+        address,
+        phone,
+        biography,
         password
       });
       toast.success("Registration successful! Waiting for admin approval.");
@@ -72,35 +82,35 @@ export default function CompanyRegistrationPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-xl bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] rounded-[2rem] overflow-hidden shadow-2xl relative"
+        className="w-full max-w-2xl bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] rounded-[2rem] overflow-hidden shadow-2xl relative my-10"
       >
-        <div className="h-24 bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center">
+        <div className="h-24 bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center relative">
           <Building2 className="w-10 h-10 text-white" />
+          <div className="absolute -bottom-6 right-10 w-12 h-12 bg-indigo-500 rounded-2xl flex items-center justify-center border-4 border-[hsl(var(--bg-card))] shadow-xl">
+             <ShieldCheck className="w-6 h-6 text-white" />
+          </div>
         </div>
 
         <div className="p-10">
           <div className="mb-10 text-center">
             <h1 className="text-3xl font-black tracking-tighter uppercase italic">
-              Partner <span className="text-indigo-500">Registration</span>
+              Partner <span className="text-indigo-500">Node Entry</span>
             </h1>
             <p className="text-[hsl(var(--text-muted))] text-xs font-bold uppercase tracking-[0.2em] mt-3 leading-relaxed">
-              You are registering for <span className="text-[hsl(var(--text-main))]">{email}</span>
+              Registering organizational intelligence for <span className="text-indigo-400">{email}</span>
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               {/* Identity Cluster */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Admin First Name</label>
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--text-muted))]" />
                   <input
-                    type="text"
-                    required
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Enter first name"
-                    className="w-full bg-[hsl(var(--bg-main))] border border-[hsl(var(--border-subtle))] rounded-xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium"
+                    type="text" required value={firstName} onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="John" className="w-full bg-[hsl(var(--bg-main))] border border-[hsl(var(--border-subtle))] rounded-xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-bold"
                   />
                 </div>
               </div>
@@ -109,43 +119,59 @@ export default function CompanyRegistrationPage() {
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--text-muted))]" />
                   <input
-                    type="text"
-                    required
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Enter last name"
-                    className="w-full bg-[hsl(var(--bg-main))] border border-[hsl(var(--border-subtle))] rounded-xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium"
+                    type="text" required value={lastName} onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Doe" className="w-full bg-[hsl(var(--bg-main))] border border-[hsl(var(--border-subtle))] rounded-xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-bold"
                   />
                 </div>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Business Email</label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--text-muted))]" />
+              
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Platform Username</label>
                 <input
-                  type="email"
-                  disabled
-                  value={email}
-                  className="w-full bg-[hsl(var(--bg-main))]/[0.5] border border-[hsl(var(--border-subtle))] rounded-xl pl-11 pr-4 py-3.5 text-sm text-[hsl(var(--text-muted))] cursor-not-allowed font-medium"
+                  type="text" required value={username} onChange={(e) => setUsername(e.target.value)}
+                  placeholder="e.g. AcmeSecurity" className="w-full bg-[hsl(var(--bg-main))] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-bold"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Corporate Website</label>
+                <input
+                  type="url" required value={website} onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://acme.org" className="w-full bg-[hsl(var(--bg-main))] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-bold"
+                />
+              </div>
+
+               <div className="space-y-2">
+                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Contact Phone</label>
+                <input
+                  type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+1 555-0199" className="w-full bg-[hsl(var(--bg-main))] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-bold"
+                />
+              </div>
+              
+               <div className="space-y-2">
+                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Security PIN / Password</label>
+                <input
+                  type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••" className="w-full bg-[hsl(var(--bg-main))] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-bold"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Secure Password</label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--text-muted))]" />
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create a strong password"
-                  className="w-full bg-[hsl(var(--bg-main))] border border-[hsl(var(--border-subtle))] rounded-xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium"
-                />
-              </div>
+              <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Physical Headquarters Address</label>
+              <textarea
+                required value={address} onChange={(e) => setAddress(e.target.value)} rows={2}
+                placeholder="Street, City, Zip, Country" className="w-full bg-[hsl(var(--bg-main))] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-bold resize-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest ml-1">Organizational Biography / Mission</label>
+              <textarea
+                required value={biography} onChange={(e) => setBiography(e.target.value)} rows={3}
+                placeholder="Describe your security focus..." className="w-full bg-[hsl(var(--bg-main))] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-bold resize-none"
+              />
             </div>
 
             <div className="pt-4">

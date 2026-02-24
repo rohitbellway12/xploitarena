@@ -8,14 +8,24 @@ const crypto = require('crypto');
 
 const register = async (req, res) => {
   try {
-    const { email, password, firstName, lastName, role } = req.body;
-
+    const { email, password, firstName, lastName, role, username, website, address, phone, biography } = req.body;
+    
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    // Check if username is already taken
+    if (username) {
+      const existingUsername = await prisma.user.findUnique({ where: { username } });
+      if (existingUsername) {
+        return res.status(400).json({ message: 'Username is already taken' });
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 12);
+
+    const isResearcher = (role || 'RESEARCHER') === 'RESEARCHER';
 
     const user = await prisma.user.create({
       data: {
@@ -24,9 +34,14 @@ const register = async (req, res) => {
         firstName,
         lastName,
         role: role || 'RESEARCHER',
+        username,
+        website,
+        address,
+        phone,
+        biography,
         isVerified: false, 
-        isActive: false, // Default to inactive, requires admin approval
-        mfaEnabled: true, // Default to true as per user request
+        isActive: isResearcher, // Researchers are auto-approved (active), Companies require manual approval
+        mfaEnabled: true,
       },
     });
 
@@ -84,7 +99,9 @@ const register = async (req, res) => {
     });
 
     res.status(201).json({ 
-      message: 'Registration successful! Please check your email for the verification link. Access will be granted after review.', 
+      message: isResearcher 
+        ? 'Registration successful! Please check your email for the verification link.' 
+        : 'Registration successful! Please check your email for the verification link. Access will be granted after review.', 
       userId: user.id 
     });
   } catch (error) {
@@ -96,8 +113,9 @@ const register = async (req, res) => {
 const verifyEmail = async (req, res) => {
   try {
     const { token } = req.params;
-    
     const verificationTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    console.log('Verifying email with token hash:', verificationTokenHash);
 
     const user = await prisma.user.findFirst({
       where: {
@@ -107,6 +125,7 @@ const verifyEmail = async (req, res) => {
     });
 
     if (!user) {
+      console.log('No user found with this resetToken or it has expired.');
       return res.status(400).json({ message: 'Invalid or expired verification link.' });
     }
 
@@ -462,6 +481,11 @@ const getMe = async (req, res) => {
       parentId: user.parentId,
       isVerified: user.isVerified,
       mfaEnabled: user.mfaEnabled,
+      username: user.username,
+      website: user.website,
+      address: user.address,
+      phone: user.phone,
+      biography: user.biography,
       createdAt: user.createdAt,
       kybStatus,
       permissions
@@ -597,7 +621,7 @@ const validateInvite = async (req, res) => {
 
 const registerCompany = async (req, res) => {
   try {
-    const { token, password, firstName, lastName } = req.body;
+    const { token, password, firstName, lastName, username, website, address, phone, biography } = req.body;
 
     // 1. Validate Invitation
     const invite = await prisma.invitation.findUnique({ where: { token } });
@@ -605,7 +629,13 @@ const registerCompany = async (req, res) => {
       return res.status(400).json({ message: 'Invalid or expired invitation' });
     }
 
-    // 2. Hash Password
+    // 2. Check if username is already taken
+    const existingUsername = await prisma.user.findUnique({ where: { username } });
+    if (existingUsername) {
+      return res.status(400).json({ message: 'Username is already taken' });
+    }
+
+    // 3. Hash Password
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // 3. Create User (Inactive by default, Verified because they have the token)
@@ -615,6 +645,11 @@ const registerCompany = async (req, res) => {
         passwordHash: hashedPassword,
         firstName,
         lastName,
+        username,
+        website,
+        address,
+        phone,
+        biography,
         role: 'COMPANY_ADMIN',
         isVerified: true, // Verification via invite token
         isActive: false,  // Wait for admin approval
@@ -654,8 +689,12 @@ const registerCompany = async (req, res) => {
       userId: user.id
     });
   } catch (error) {
-    console.error('Register Company Error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('CRITICAL REGISTER COMPANY ERROR:', error);
+    res.status(500).json({ 
+      message: 'Internal server error', 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 

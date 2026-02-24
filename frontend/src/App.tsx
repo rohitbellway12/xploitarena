@@ -39,6 +39,7 @@ import EventDashboard from './pages/EventDashboard';
 import InboxPage from './pages/InboxPage';
 import ResearcherSubmissionsPage from './pages/ResearcherSubmissionsPage';
 import ResearcherTeamsPage from './pages/ResearcherTeamsPage';
+import AdminReportsPage from './pages/AdminReportsPage';
 
 const queryClient = new QueryClient();
 
@@ -82,6 +83,7 @@ function App() {
             <Route path="/admin/triagers" element={<TriagersPage />} />
             <Route path="/admin/logs" element={<AdminAuditLogs />} />
             <Route path="/admin/approvals" element={<AdminApprovals />} />
+            <Route path="/admin/reports" element={<AdminReportsPage />} />
             <Route path="/admin/team" element={<AdminTeamPage />} />
             <Route path="/admin/employees" element={<EmployeeManagementPage />} />
             <Route path="/admin/roles" element={<RoleManagementPage />} />

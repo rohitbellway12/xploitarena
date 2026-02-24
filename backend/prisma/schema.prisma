@@ -57,6 +57,13 @@ model User {
   createdTeams   ResearcherTeam[] @relation("TeamCreator")
   teamMemberships ResearcherTeamMember[]
   comments        Comment[]
+  username        String?   @unique @map("username")
+  website         String?   @map("website")
+  address         String?   @map("address")
+  phone           String?   @map("phone")
+  biography       String?   @db.Text @map("biography")
+  payoutDetails   String?   @db.Text @map("payout_details")
+  
   notifications   Notification[]
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
@@ -147,6 +154,8 @@ model Program {
   slaTriage        Int?     @map("sla_triage")
   slaResolution    Int?     @map("sla_resolution")
 
+  outOfScope  String?       @db.Text @map("out_of_scope")
+  
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
@@ -397,4 +406,13 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@map("notifications")
+}
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
 }

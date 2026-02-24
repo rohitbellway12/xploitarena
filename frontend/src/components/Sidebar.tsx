@@ -46,6 +46,7 @@ export default function Sidebar({ role }: SidebarProps) {
     { name: 'Company Hub', path: '/admin/companies', icon: Building2, permission: 'admin:companies' },
     { name: 'Triagers', path: '/admin/triagers', icon: ShieldCheck, permission: 'admin:triagers' },
     { name: 'Audit Logs', path: '/admin/logs', icon: FileText, permission: 'admin:audit' },
+    { name: 'Reports', path: '/admin/reports', icon: FileText, permission: 'admin:triage' },
     { name: 'Permissions', path: '/admin/permissions', icon: ShieldCheck, permission: 'admin:settings' },
     { name: 'Event Management', path: '/admin/events', icon: Trophy, permission: 'admin:events' },
     { name: 'Admin Team', path: '/admin/team', icon: Users, permission: 'admin:stats' },
