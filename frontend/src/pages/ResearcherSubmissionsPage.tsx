@@ -5,13 +5,12 @@ import api from '../api/axios';
 import { 
   FileText, 
   Search, 
-  ExternalLink,
   Shield,
   Clock,
   DollarSign,
-  AlertCircle
+  
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 
 export default function ResearcherSubmissionsPage() {

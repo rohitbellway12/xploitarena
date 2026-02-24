@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
 import api from '../api/axios';
 import { Trophy, Medal, Target, ArrowUpRight, Search } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
