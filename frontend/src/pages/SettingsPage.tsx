@@ -21,6 +21,7 @@ type TabType = 'security' | 'notifications' | 'account' | 'smtp' | 'ratelimit' |
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('security');
+  const [userRole, setUserRole] = useState<string>('');
   const [mfaEnabled, setMfaEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -37,6 +38,7 @@ export default function SettingsPage() {
           api.get('/settings')
         ]);
         
+        setUserRole(userResponse.data.role);
         setMfaEnabled(userResponse.data.mfaEnabled);
         
         const s = settingsResponse.data;
@@ -118,13 +120,17 @@ export default function SettingsPage() {
     );
   }
 
+  const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(userRole);
+
   const tabs = [
     { id: 'security', name: 'Security & Access', icon: Shield },
     { id: 'notifications', name: 'Signal Alerts', icon: Bell },
     { id: 'account', name: 'Account Identity', icon: User },
-    { id: 'smtp', name: 'Mail Server (SMTP)', icon: Mail },
-    { id: 'ratelimit', name: 'Traffic Control', icon: Zap },
-    { id: 'branding', name: 'Branding & UI', icon: Palette },
+    ...(isAdmin ? [
+      { id: 'smtp', name: 'Mail Server (SMTP)', icon: Mail },
+      { id: 'ratelimit', name: 'Traffic Control', icon: Zap },
+      { id: 'branding', name: 'Branding & UI', icon: Palette },
+    ] : [])
   ];
 
   return (
