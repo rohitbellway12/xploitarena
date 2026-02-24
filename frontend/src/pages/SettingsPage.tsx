@@ -1,17 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { 
-  User, 
-  Lock, 
-  Bell, 
   Shield, 
-  Smartphone,
-  ChevronRight,
-  CheckCircle2,
-  Key,
-  Mail,
-  Zap,
-  Palette
+  Bell, 
+  User, 
+  Mail, 
+  Zap, 
+  Palette, 
+  Lock, 
+  Key, 
 } from 'lucide-react';
 import api from '../api/axios';
 import { toast } from 'react-hot-toast';
@@ -28,7 +25,8 @@ export default function SettingsPage() {
   
   const [smtp, setSmtp] = useState({ host: '', port: '', user: '', pass: '', secure: false });
   const [traffic, setTraffic] = useState({ apiLimit: 100, lockoutTime: 15 });
-  const [branding, setBranding] = useState({ title: 'XploitArena', primaryColor: '230 100% 60%' });
+  const [branding, setBranding] = useState({ title: 'XploitArena' });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -59,7 +57,7 @@ export default function SettingsPage() {
     setUpdating(true);
     try {
       await api.post('/settings/update', { key: 'smtp_config', value: smtp });
-      toast.success('SMTP configuration saved and synced');
+      toast.success('SMTP configuration saved');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to save SMTP settings');
     } finally {
@@ -71,7 +69,7 @@ export default function SettingsPage() {
     setUpdating(true);
     try {
       await api.post('/settings/update', { key: 'traffic_config', value: traffic });
-      toast.success('Traffic control parameters updated');
+      toast.success('Rate limits updated');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update traffic settings');
     } finally {
@@ -83,7 +81,7 @@ export default function SettingsPage() {
     setUpdating(true);
     try {
       await api.post('/settings/update', { key: 'branding_config', value: branding });
-      toast.success('Theme and branding synchronized');
+      toast.success('Branding updated');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update branding');
     } finally {
@@ -123,34 +121,34 @@ export default function SettingsPage() {
   const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(userRole);
 
   const tabs = [
-    { id: 'security', name: 'Security & Access', icon: Shield },
-    { id: 'notifications', name: 'Signal Alerts', icon: Bell },
-    { id: 'account', name: 'Account Identity', icon: User },
+    { id: 'security', name: 'Security', icon: Shield },
+    { id: 'notifications', name: 'Notifications', icon: Bell },
+    { id: 'account', name: 'Profile', icon: User },
     ...(isAdmin ? [
-      { id: 'smtp', name: 'Mail Server (SMTP)', icon: Mail },
-      { id: 'ratelimit', name: 'Traffic Control', icon: Zap },
-      { id: 'branding', name: 'Branding & UI', icon: Palette },
+      { id: 'smtp', name: 'SMTP', icon: Mail },
+      { id: 'ratelimit', name: 'Rate Limit', icon: Zap },
+      { id: 'branding', name: 'Branding', icon: Palette },
     ] : [])
   ];
 
   return (
     <DashboardLayout>
-      <div className="w-full max-w-5xl mx-auto space-y-10 pb-20">
+      <div className="w-full max-w-5xl mx-auto space-y-6 pb-20">
         <header>
-          <h1 className="text-3xl font-black text-[hsl(var(--text-main))] tracking-tight uppercase">System Settings</h1>
-          <p className="text-[hsl(var(--text-muted))] text-xs font-bold uppercase tracking-[0.2em] mt-2 px-1">Infrastructure parameters and operational preferences.</p>
+          <h1 className="text-3xl font-bold text-[hsl(var(--text-main))] tracking-tight">Settings</h1>
+          <p className="text-[hsl(var(--text-muted))] text-sm mt-1">Manage your account and platform preferences.</p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-12 items-start">
-           <div className="lg:col-span-1 flex flex-col gap-2">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+           <div className="lg:col-span-1 flex flex-col gap-1">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as TabType)}
-                  className={`flex items-center gap-4 px-5 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 group ${
+                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 group ${
                     activeTab === tab.id 
-                      ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/20 ring-1 ring-white/10' 
-                      : 'text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-main))] hover:bg-[hsl(var(--text-main))]/[0.03]'
+                      ? 'bg-indigo-600 text-white shadow-md' 
+                      : 'text-[hsl(var(--text-muted))] hover:text-[hsl(var(--text-main))] hover:bg-white/5'
                   }`}
                 >
                   <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-[hsl(var(--text-muted))] group-hover:text-indigo-400'}`} />
@@ -163,264 +161,236 @@ export default function SettingsPage() {
               <AnimatePresence mode="wait">
                  <motion.div
                    key={activeTab}
-                   initial={{ opacity: 0, x: 10 }}
-                   animate={{ opacity: 1, x: 0 }}
-                   exit={{ opacity: 0, x: -10 }}
-                   transition={{ duration: 0.2 }}
-                   className="bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] rounded-[40px] p-10 backdrop-blur-sm relative overflow-hidden shadow-sm"
+                   initial={{ opacity: 0, y: 10 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   exit={{ opacity: 0, y: -10 }}
+                   transition={{ duration: 0.15 }}
+                   className="bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] rounded-3xl p-8 backdrop-blur-sm relative overflow-hidden"
                  >
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[80px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
-                    
                     {activeTab === 'security' && (
-                       <div className="space-y-12 relative z-10">
+                       <div className="space-y-8">
                           <section>
-                             <div className="flex items-center justify-between mb-8">
-                                <div>
-                                   <h3 className="text-xl font-black text-[hsl(var(--text-main))] uppercase tracking-tight">Access Hardening</h3>
-                                   <p className="text-xs text-[hsl(var(--text-muted))] font-bold uppercase tracking-widest mt-1">Configure multi-layered authentication protocols.</p>
-                                </div>
-                                <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${mfaEnabled ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-[hsl(var(--bg-main))] text-[hsl(var(--text-muted))] border border-[hsl(var(--border-subtle))]'}`}>
-                                   Status: {mfaEnabled ? 'Operational' : 'Inactive'}
-                                </div>
+                             <div className="mb-6">
+                                <h3 className="text-xl font-bold text-[hsl(var(--text-main))]">Security</h3>
                              </div>
 
-                             <div className="p-8 bg-[hsl(var(--text-main))]/[0.02] border border-[hsl(var(--border-subtle))] rounded-3xl hover:border-indigo-500/20 transition-all">
-                                <div className="flex items-start justify-between">
-                                   <div className="flex gap-6">
-                                      <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-inner">
-                                         <Lock className="w-7 h-7" />
+                             <div className="p-6 bg-white/5 border border-[hsl(var(--border-subtle))] rounded-2xl">
+                                <div className="flex items-center justify-between">
+                                   <div className="flex gap-4 items-center">
+                                      <div className="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                                         <Lock className="w-5 h-5" />
                                       </div>
-                                      <div className="max-w-md">
-                                         <h4 className="text-base font-bold text-[hsl(var(--text-main))] uppercase tracking-tight mb-2">Satellite 2FA (Email)</h4>
-                                         <p className="text-xs text-[hsl(var(--text-muted))] leading-relaxed font-medium">Verify login attempts via temporary codes dispatched to your primary secure communication node.</p>
+                                      <div>
+                                         <h4 className="text-sm font-bold text-[hsl(var(--text-main))]">Email 2FA</h4>
+                                         <p className="text-xs text-[hsl(var(--text-muted))]">Login codes via email</p>
                                       </div>
                                    </div>
                                    
-                                   <button 
-                                     onClick={handleToggleMFA}
-                                     disabled={updating}
-                                     className={`relative inline-flex h-8 w-14 items-center rounded-full transition-all duration-500 focus:outline-none ${
-                                       mfaEnabled ? 'bg-indigo-600 shadow-lg shadow-indigo-600/30' : 'bg-[hsl(var(--border-subtle))]'
-                                     }`}
-                                   >
-                                     <span
-                                       className={`inline-block h-6 w-6 transform rounded-full bg-white transition-all duration-300 shadow-md ${
-                                         mfaEnabled ? 'translate-x-7' : 'translate-x-1'
-                                       }`}
-                                     />
-                                   </button>
-                                </div>
-
-                                <div className="mt-8 pt-8 border-t border-[hsl(var(--border-subtle))] grid grid-cols-1 md:grid-cols-2 gap-6">
-                                   <div className="flex gap-3">
-                                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                                      <span className="text-[10px] text-[hsl(var(--text-muted))] font-bold uppercase tracking-wide">Mandatory on high-tier nodes</span>
-                                   </div>
-                                   <div className="flex gap-3">
-                                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                                      <span className="text-[10px] text-[hsl(var(--text-muted))] font-bold uppercase tracking-wide">Automatic session revocation</span>
+                                   <div className="flex items-center gap-4">
+                                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${mfaEnabled ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-500/20 text-slate-400'}`}>
+                                         {mfaEnabled ? 'Enabled' : 'Disabled'}
+                                      </span>
+                                      <button 
+                                        onClick={handleToggleMFA}
+                                        disabled={updating}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                                          mfaEnabled ? 'bg-indigo-600' : 'bg-white/10'
+                                        }`}
+                                      >
+                                        <span
+                                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                            mfaEnabled ? 'translate-x-6' : 'translate-x-1'
+                                          }`}
+                                        />
+                                      </button>
                                    </div>
                                 </div>
                              </div>
                           </section>
 
-                          <section className="space-y-6 pt-12 border-t border-[hsl(var(--border-subtle))]">
-                             <h3 className="text-[10px] font-black text-[hsl(var(--text-muted))] uppercase tracking-[0.3em]">Advanced Credentials</h3>
-                             <div className="space-y-4">
-                                <button className="w-full p-6 bg-[hsl(var(--text-main))]/[0.01] border border-[hsl(var(--border-subtle))] rounded-2xl flex items-center justify-between group hover:bg-[hsl(var(--text-main))]/[0.03] transition-all text-[hsl(var(--text-muted))] hover:text-indigo-400 pointer-events-none opacity-40">
-                                   <div className="flex items-center gap-5">
-                                      <Key className="w-5 h-5" />
-                                      <span className="text-xs font-black uppercase tracking-widest">Rotate Primary Access Hash</span>
-                                   </div>
-                                   <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                </button>
-                                <button className="w-full p-6 bg-[hsl(var(--text-main))]/[0.01] border border-[hsl(var(--border-subtle))] rounded-2xl flex items-center justify-between group hover:bg-[hsl(var(--text-main))]/[0.03] transition-all text-[hsl(var(--text-muted))] hover:text-indigo-400 pointer-events-none opacity-40">
-                                   <div className="flex items-center gap-5">
-                                      <Smartphone className="w-5 h-5" />
-                                      <span className="text-xs font-black uppercase tracking-widest">Connect Hardware Token</span>
-                                   </div>
-                                   <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                </button>
+                          <section className="space-y-4 pt-8 border-t border-[hsl(var(--border-subtle))] opacity-40 grayscale pointer-events-none">
+                             <h3 className="text-xs font-bold text-[hsl(var(--text-muted))] uppercase tracking-wider">Additional Methods</h3>
+                             <div className="p-4 bg-white/5 border border-[hsl(var(--border-subtle))] rounded-xl flex items-center justify-between">
+                                <div className="flex items-center gap-3 text-xs font-bold">
+                                   <Key className="w-4 h-4" />
+                                   <span>Hardware Keys</span>
+                                </div>
+                                <span className="text-[10px] italic">Coming Soon</span>
                              </div>
                           </section>
                        </div>
                     )}
 
                     {activeTab === 'notifications' && (
-                       <div className="space-y-10 relative z-10 text-center py-20 opacity-50">
-                          <Bell className="w-16 h-16 text-[hsl(var(--text-muted))] mx-auto mb-6 opacity-20" />
-                          <div>
-                            <h3 className="text-xl font-black text-[hsl(var(--text-main))] uppercase tracking-tight">Signal Telemetry UI</h3>
-                            <p className="text-xs text-[hsl(var(--text-muted))] font-bold uppercase tracking-widest mt-2 px-1">Configure notification push protocols for system event loops.</p>
-                          </div>
-                          <div className="max-w-xs mx-auto p-4 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl">
-                             <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Module Locked: Development Tier 2</span>
-                          </div>
+                       <div className="py-20 text-center opacity-40">
+                          <Bell className="w-10 h-10 text-[hsl(var(--text-muted))] mx-auto mb-4" />
+                          <h3 className="text-lg font-bold">Notifications</h3>
+                          <p className="text-xs mt-1">Coming soon in future updates.</p>
                        </div>
                     )}
 
                      {activeTab === 'account' && (
-                        <div className="space-y-10 relative z-10 text-center py-20 opacity-50">
-                           <User className="w-16 h-16 text-[hsl(var(--text-muted))] mx-auto mb-6 opacity-20" />
-                           <div>
-                             <h3 className="text-xl font-black text-[hsl(var(--text-main))] uppercase tracking-tight">Identity Assessment</h3>
-                             <p className="text-xs text-[hsl(var(--text-muted))] font-bold uppercase tracking-widest mt-2 px-1">Manage core registry data and organizational telemetry.</p>
-                           </div>
-                           <div className="max-w-xs mx-auto p-4 bg-rose-500/5 border border-rose-500/10 rounded-2xl">
-                              <span className="text-[10px] font-black text-rose-400 uppercase tracking-[0.2em]">Security Clearance Insufficient</span>
-                           </div>
+                        <div className="py-20 text-center opacity-40">
+                           <User className="w-10 h-10 text-[hsl(var(--text-muted))] mx-auto mb-4" />
+                           <h3 className="text-lg font-bold">Profile</h3>
+                           <p className="text-xs mt-1">Profile management coming soon.</p>
                         </div>
                      )}
 
-                     {activeTab === 'smtp' && (
-                        <div className="space-y-8 relative z-10">
-                           <div>
-                              <h3 className="text-xl font-black text-[hsl(var(--text-main))] uppercase tracking-tight">SMTP Communication Node</h3>
-                              <p className="text-xs text-[hsl(var(--text-muted))] font-bold uppercase tracking-widest mt-1">Configure automated dispatch protocols for system alerts.</p>
-                           </div>
+                      {activeTab === 'smtp' && (
+                         <div className="space-y-6">
+                            <div>
+                               <h3 className="text-xl font-bold">SMTP Settings</h3>
+                               <p className="text-xs text-[hsl(var(--text-muted))] mt-1">Configure email dispatch.</p>
+                            </div>
 
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <div className="space-y-2">
-                                 <label className="text-[10px] font-black text-[hsl(var(--text-muted))] uppercase tracking-widest ml-1">Host Endpoint</label>
-                                 <input 
-                                  type="text" 
-                                  value={smtp.host}
-                                  onChange={(e) => setSmtp({ ...smtp, host: e.target.value })}
-                                  placeholder="smtp.provider.com" 
-                                  className="w-full bg-white/5 border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-sm font-bold focus:border-indigo-500 outline-none transition-all placeholder:opacity-30" 
-                                 />
-                              </div>
-                              <div className="space-y-2">
-                                 <label className="text-[10px] font-black text-[hsl(var(--text-muted))] uppercase tracking-widest ml-1">Port</label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                               <div className="space-y-1.5">
+                                  <label className="text-xs font-bold text-[hsl(var(--text-muted))]">Host</label>
+                                  <input 
+                                   type="text" 
+                                   value={smtp.host}
+                                   onChange={(e) => setSmtp({ ...smtp, host: e.target.value })}
+                                   placeholder="smtp.example.com" 
+                                   className="w-full bg-white/5 border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 outline-none transition-all" 
+                                  />
+                               </div>
+                              <div className="space-y-1.5">
+                                 <label className="text-xs font-bold text-[hsl(var(--text-muted))]">Port</label>
                                  <input 
                                   type="text" 
                                   value={smtp.port}
                                   onChange={(e) => setSmtp({ ...smtp, port: e.target.value })}
                                   placeholder="587" 
-                                  className="w-full bg-white/5 border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-sm font-bold focus:border-indigo-500 outline-none transition-all placeholder:opacity-30" 
+                                  className="w-full bg-white/5 border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 outline-none transition-all" 
                                  />
                               </div>
-                              <div className="space-y-2">
-                                 <label className="text-[10px] font-black text-[hsl(var(--text-muted))] uppercase tracking-widest ml-1">Authentication User</label>
+                              <div className="space-y-1.5">
+                                 <label className="text-xs font-bold text-[hsl(var(--text-muted))]">Username</label>
                                  <input 
                                   type="text" 
                                   value={smtp.user}
                                   onChange={(e) => setSmtp({ ...smtp, user: e.target.value })}
                                   placeholder="api_key_or_user" 
-                                  className="w-full bg-white/5 border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-sm font-bold focus:border-indigo-500 outline-none transition-all placeholder:opacity-30" 
+                                  className="w-full bg-white/5 border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 outline-none transition-all" 
                                  />
                               </div>
-                              <div className="space-y-2">
-                                 <label className="text-[10px] font-black text-[hsl(var(--text-muted))] uppercase tracking-widest ml-1">Password / Secure Key</label>
+                              <div className="space-y-1.5">
+                                 <label className="text-xs font-bold text-[hsl(var(--text-muted))]">Password</label>
                                  <input 
                                   type="password" 
                                   value={smtp.pass}
                                   onChange={(e) => setSmtp({ ...smtp, pass: e.target.value })}
                                   placeholder="••••••••••••" 
-                                  className="w-full bg-white/5 border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-sm font-bold focus:border-indigo-500 outline-none transition-all placeholder:opacity-30" 
+                                  className="w-full bg-white/5 border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 outline-none transition-all" 
                                  />
                               </div>
                            </div>
                            
                            <button 
-                            onClick={handleSaveSmtp}
-                            disabled={updating}
-                            className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-600/20 transition-all flex items-center justify-center gap-3"
-                           >
-                              {updating ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Zap className="w-4 h-4" />}
-                              Test Connection & Sync
-                           </button>
-                        </div>
-                     )}
+                             onClick={handleSaveSmtp}
+                             disabled={updating}
+                             className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-2"
+                            >
+                               {updating ? <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                               Save SMTP
+                            </button>
+                         </div>
+                      )}
 
-                     {activeTab === 'ratelimit' && (
-                        <div className="space-y-8 relative z-10">
-                           <div>
-                              <h3 className="text-xl font-black text-[hsl(var(--text-main))] uppercase tracking-tight">Traffic Control Layer</h3>
-                              <p className="text-xs text-[hsl(var(--text-muted))] font-bold uppercase tracking-widest mt-1">Regulate request velocity and mitigate flood vectors.</p>
-                           </div>
+                      {activeTab === 'ratelimit' && (
+                         <div className="space-y-6">
+                            <div>
+                               <h3 className="text-xl font-bold">Rate Limiting</h3>
+                               <p className="text-xs text-[hsl(var(--text-muted))] mt-1">System protection settings.</p>
+                            </div>
 
-                           <div className="p-8 bg-indigo-500/5 border border-indigo-500/10 rounded-[2rem] space-y-6">
-                              <div className="flex items-center justify-between">
-                                 <div>
-                                    <h4 className="text-sm font-black text-[hsl(var(--text-main))] uppercase tracking-tight">API Threshold</h4>
-                                    <p className="text-[10px] text-[hsl(var(--text-muted))] font-bold uppercase tracking-widest mt-1">Global request limit per window.</p>
-                                 </div>
-                                 <input 
-                                  type="number" 
-                                  value={traffic.apiLimit}
-                                  onChange={(e) => setTraffic({ ...traffic, apiLimit: parseInt(e.target.value) })}
-                                  className="w-24 bg-white/10 border border-white/10 rounded-xl px-4 py-2 text-right font-black text-indigo-400 outline-none focus:border-indigo-500 transition-all" 
-                                 />
-                              </div>
-                              <div className="flex items-center justify-between">
-                                 <div>
-                                    <h4 className="text-sm font-black text-[hsl(var(--text-main))] uppercase tracking-tight">Lockout Duration</h4>
-                                    <p className="text-[10px] text-[hsl(var(--text-muted))] font-bold uppercase tracking-widest mt-1">Penalty time for threshold breach (minutes).</p>
-                                 </div>
-                                 <input 
-                                  type="number" 
-                                  value={traffic.lockoutTime}
-                                  onChange={(e) => setTraffic({ ...traffic, lockoutTime: parseInt(e.target.value) })}
-                                  className="w-24 bg-white/10 border border-white/10 rounded-xl px-4 py-2 text-right font-black text-indigo-400 outline-none focus:border-indigo-500 transition-all" 
-                                 />
-                              </div>
-                           </div>
+                            <div className="p-6 bg-white/5 border border-[hsl(var(--border-subtle))] rounded-2xl space-y-4">
+                               <div className="flex items-center justify-between">
+                                  <div>
+                                     <h4 className="text-sm font-bold">API Limit</h4>
+                                     <p className="text-[10px] text-[hsl(var(--text-muted))]">Requests per 15 mins</p>
+                                  </div>
+                                  <input 
+                                   type="number" 
+                                   value={traffic.apiLimit}
+                                   onChange={(e) => setTraffic({ ...traffic, apiLimit: parseInt(e.target.value) })}
+                                   className="w-20 bg-white/10 border border-white/10 rounded-lg px-3 py-1.5 text-right font-bold text-indigo-400 outline-none focus:border-indigo-500" 
+                                  />
+                               </div>
+                               <div className="flex items-center justify-between">
+                                  <div>
+                                     <h4 className="text-sm font-bold">Lockout Duration</h4>
+                                     <p className="text-[10px] text-[hsl(var(--text-muted))]">Minutes blocked after breach</p>
+                                  </div>
+                                  <input 
+                                   type="number" 
+                                   value={traffic.lockoutTime}
+                                   onChange={(e) => setTraffic({ ...traffic, lockoutTime: parseInt(e.target.value) })}
+                                   className="w-20 bg-white/10 border border-white/10 rounded-lg px-3 py-1.5 text-right font-bold text-indigo-400 outline-none focus:border-indigo-500" 
+                                  />
+                               </div>
+                            </div>
 
-                           <div className="flex gap-4">
-                              <button 
-                                onClick={handleSaveTraffic}
-                                disabled={updating}
-                                className="flex-1 py-4 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all"
+                           <button 
+                             onClick={handleSaveTraffic}
+                             disabled={updating}
+                             className="px-6 py-2.5 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 border border-indigo-600/20 rounded-xl font-bold text-xs transition-colors"
+                            >
+                               {updating ? 'Saving...' : 'Apply Limits'}
+                            </button>
+                         </div>
+                      )}
+
+                      {activeTab === 'branding' && (
+                         <div className="space-y-8">
+                            <div>
+                               <h3 className="text-xl font-bold">Branding</h3>
+                               <p className="text-xs text-[hsl(var(--text-muted))] mt-1">Platform customization.</p>
+                            </div>
+
+                           <div className="flex items-center gap-8">
+                              <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                className="hidden" 
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    toast.success(`Logo selected: ${file.name}`);
+                                    // In a real app, you'd upload this to a server/S3
+                                  }
+                                }} 
+                              />
+                              <div 
+                                onClick={() => fileInputRef.current?.click()}
+                                className="w-24 h-24 rounded-2xl bg-white/5 border border-dashed border-[hsl(var(--border-subtle))] flex flex-col items-center justify-center gap-1 group cursor-pointer hover:border-indigo-500/40 transition-colors"
                               >
-                                {updating ? 'Saving...' : 'Reload Middleware'}
-                              </button>
-                           </div>
-                        </div>
-                     )}
-
-                     {activeTab === 'branding' && (
-                        <div className="space-y-10 relative z-10">
-                           <div>
-                              <h3 className="text-xl font-black text-[hsl(var(--text-main))] uppercase tracking-tight">Platform Identity</h3>
-                              <p className="text-xs text-[hsl(var(--text-muted))] font-bold uppercase tracking-widest mt-1">Customize visual telemetry and organizational branding.</p>
-                           </div>
-
-                           <div className="flex items-center gap-10">
-                              <div className="w-32 h-32 rounded-[2rem] bg-white/5 border border-dashed border-[hsl(var(--border-subtle))] flex flex-col items-center justify-center gap-2 group cursor-pointer hover:border-indigo-500/40 transition-all">
-                                 <Palette className="w-6 h-6 text-[hsl(var(--text-muted))] group-hover:text-indigo-400 transition-colors" />
-                                 <span className="text-[10px] font-black text-[hsl(var(--text-muted))] uppercase tracking-tighter">New Logo</span>
+                                 <Palette className="w-5 h-5 text-[hsl(var(--text-muted))] group-hover:text-indigo-400" />
+                                 <span className="text-[9px] font-bold text-[hsl(var(--text-muted))]">New Logo</span>
                               </div>
                               <div className="flex-1 space-y-4">
                                  <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-[hsl(var(--text-muted))] uppercase tracking-widest">Platform Title</label>
+                                    <label className="text-xs font-bold text-[hsl(var(--text-muted))]">Website Title</label>
                                     <input 
                                      type="text" 
                                      value={branding.title}
                                      onChange={(e) => setBranding({ ...branding, title: e.target.value })}
-                                     className="w-full bg-white/5 border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-sm font-bold focus:border-indigo-500 outline-none transition-all" 
-                                    />
-                                 </div>
-                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-[hsl(var(--text-muted))] uppercase tracking-widest">Primary Accent HSL</label>
-                                    <input 
-                                     type="text" 
-                                     value={branding.primaryColor}
-                                     onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
-                                     className="w-full bg-white/5 border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-sm font-bold focus:border-indigo-500 outline-none transition-all" 
+                                     className="w-full bg-white/5 border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-2 text-sm focus:border-indigo-500 outline-none transition-all" 
                                     />
                                  </div>
                               </div>
                            </div>
 
                            <button 
-                            onClick={handleSaveBranding}
-                            className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-600/20 transition-all"
-                           >
-                              Update Visual Node
-                           </button>
-                        </div>
-                     )}
+                             onClick={handleSaveBranding}
+                             className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs shadow-md shadow-indigo-600/10 transition-all"
+                            >
+                               Update Branding
+                            </button>
+                         </div>
+                      )}
                  </motion.div>
               </AnimatePresence>
            </div>
