@@ -54,3 +54,14 @@ exports.deleteNotification = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+exports.getUnreadCount = async (req, res) => {
+  try {
+    const count = await prisma.notification.count({
+      where: { userId: req.user.id, isRead: false },
+    });
+    res.json({ count });
+  } catch (error) {
+    console.error('Get Unread Count Error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};

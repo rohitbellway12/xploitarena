@@ -43,9 +43,7 @@ export default function AdminDashboard() {
         setStats(response.data);
       } catch (error: any) {
         console.error('Failed to fetch admin stats:', error);
-        const errorMessage = error.response?.data?.message || 'Failed to load admin dashboard';
-        toast.error(errorMessage);
-        // Set default values to prevent UI breakage
+        toast.error('Failed to load admin dashboard');
         setStats({
           totalBounties: '$0',
           totalResearchers: 0,
@@ -81,21 +79,21 @@ export default function AdminDashboard() {
   };
 
   const cards = [
-    { name: 'Total Payouts', value: stats?.totalBounties || '$0', icon: CreditCard, color: 'text-emerald-500', bg: 'bg-emerald-500/5' },
-    { name: 'Active Researchers', value: stats?.totalResearchers || 0, icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/5' },
-    { name: 'Partner Companies', value: stats?.totalCompanies || 0, icon: Building2, color: 'text-indigo-500', bg: 'bg-indigo-500/5' },
-    { name: 'Security Reports', value: stats?.reportsFiled || 0, icon: ShieldAlert, color: 'text-rose-500', bg: 'bg-rose-500/5' },
+    { name: 'Total Payouts', value: stats?.totalBounties || '$0', icon: CreditCard, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+    { name: 'Researchers', value: stats?.totalResearchers || 0, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+    { name: 'Companies', value: stats?.totalCompanies || 0, icon: Building2, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
+    { name: 'Reports', value: stats?.reportsFiled || 0, icon: ShieldAlert, color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-900/20' },
   ];
 
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="w-full space-y-8 animate-pulse p-4">
-          <div className="h-8 w-48 bg-white/5 rounded"></div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-white/5 rounded-xl"></div>)}
+        <div className="w-full space-y-6 animate-pulse p-4 md:p-8 max-w-6xl mx-auto">
+          <div className="h-20 bg-slate-100 dark:bg-slate-800 rounded-xl"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-slate-100 dark:bg-slate-800 rounded-xl"></div>)}
           </div>
-          <div className="h-96 bg-white/5 rounded-xl"></div>
+          <div className="h-96 bg-slate-100 dark:bg-slate-800 rounded-xl"></div>
         </div>
       </DashboardLayout>
     );
@@ -103,143 +101,128 @@ export default function AdminDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="w-full max-w-7xl mx-auto space-y-6 pb-12">
-        {/* Professional Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-[hsl(var(--text-main))] tracking-tight uppercase tracking-widest text-sm text-indigo-500">Infrastructure <span className="text-[hsl(var(--text-main))]">Command Center</span></h1>
-            <h2 className="text-2xl font-black text-[hsl(var(--text-main))] tracking-tight mt-1">System Intelligence</h2>
+      <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6 pb-20">
+        
+        {/* Simplified Header */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold">
+               SYS
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white">Admin Dashboard</h1>
+              <p className="text-slate-500 text-sm">System intelligence and partner management</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full md:w-auto">
             <button 
               onClick={() => setIsInviteModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all font-bold shadow-lg shadow-indigo-600/20 active:scale-95 text-xs"
+              className="w-full md:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
             >
-              <Send className="w-3.5 h-3.5" />
-              Invite Partner
+              <Send size={16} /> Invite Company
             </button>
           </div>
         </div>
 
-        {/* Stats Matrix - High Density */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {cards.map((card, index) => (
-            <motion.div 
-              key={card.name}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] p-5 rounded-2xl hover:border-indigo-500/20 transition-all group shadow-sm flex items-center gap-4"
-            >
-              <div className={`p-3 ${card.bg} rounded-xl ${card.color}`}>
-                <card.icon className="w-5 h-5" />
+        {/* Stats Grid - High Density */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {cards.map((card) => (
+            <div key={card.name} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex flex-col md:flex-row items-start md:items-center gap-4">
+              <div className={`p-3 ${card.bg} ${card.color} rounded-lg shrink-0`}>
+                <card.icon size={20} />
               </div>
-              <div>
-                <p className="text-[10px] font-bold text-[hsl(var(--text-muted))] uppercase tracking-wider opacity-70">{card.name}</p>
-                <h2 className="text-xl font-black text-[hsl(var(--text-main))] mt-0.5">{card.value}</h2>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate">{card.name}</p>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">{card.value}</h2>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 
-        {/* SLA Compliance Terminal */}
-        <div className="space-y-3">
-           <div className="flex items-center gap-2 px-1">
-              <Timer className="w-4 h-4 text-indigo-500" />
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-[hsl(var(--text-main))] opacity-80">SLA Compliance Matrix</h3>
+        {/* SLA Compliance */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
+           <div className="flex items-center gap-2 mb-4 border-b border-slate-100 dark:border-slate-800 pb-2">
+              <Timer size={16} className="text-indigo-500" />
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 dark:text-white">Compliance Metrics</h3>
            </div>
            <SlaDashboard role="admin" />
         </div>
 
-        {/* Action Banners - Refined */}
+        {/* Action Banners */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-gradient-to-br from-indigo-500/10 to-purple-500/5 border border-indigo-500/20 p-5 rounded-2xl flex items-center justify-between group cursor-pointer hover:border-indigo-500/40 transition-all"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
-                <Inbox className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-[hsl(var(--text-main))]">Pending Approvals</h4>
-                <p className="text-[10px] text-[hsl(var(--text-muted))] opacity-70">Review partner credentials</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {stats?.pendingApprovals && stats.pendingApprovals > 0 && (
-                <span className="px-2 py-0.5 rounded-md bg-rose-500 text-white text-[9px] font-black animate-pulse">
-                  {stats.pendingApprovals} NEW
-                </span>
-              )}
-              <a href="/admin/approvals" className="p-2 rounded-lg bg-[hsl(var(--text-main))]/[0.05] group-hover:bg-indigo-500 group-hover:text-white transition-all text-indigo-400">
-                <ChevronRight className="w-4 h-4" />
-              </a>
-            </div>
-          </motion.div>
-          
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 p-5 rounded-2xl flex items-center justify-between group cursor-pointer hover:border-emerald-500/40 transition-all text-emerald-400"
-          >
+           <div 
+             onClick={() => navigate('/admin/approvals')}
+             className="bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800/30 p-5 rounded-xl flex items-center justify-between cursor-pointer hover:bg-indigo-100/50 dark:hover:bg-indigo-900/20 transition-all shadow-sm"
+           >
              <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-[hsl(var(--text-main))]">Security Health</h4>
-                <p className="text-[10px] text-[hsl(var(--text-muted))] opacity-70">Platform telemetry: Nominal</p>
-              </div>
-            </div>
-            <div className="px-2 py-1 bg-emerald-500/10 rounded-md text-[9px] font-bold tracking-widest uppercase border border-emerald-500/20">
-              Stable
-            </div>
-          </motion.div>
+               <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
+                 <Inbox size={20} />
+               </div>
+               <div>
+                 <h4 className="text-sm font-bold text-slate-900 dark:text-white">Pending Approvals</h4>
+                 <p className="text-[10px] text-slate-500 font-bold uppercase">Review partner applications</p>
+               </div>
+             </div>
+             {stats?.pendingApprovals && stats.pendingApprovals > 0 ? (
+               <span className="px-2 py-0.5 rounded bg-rose-500 text-white text-[9px] font-bold animate-pulse">
+                 {stats.pendingApprovals} NEW
+               </span>
+             ) : (
+               <ChevronRight size={16} className="text-slate-400" />
+             )}
+           </div>
+
+           <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30 p-5 rounded-xl flex items-center justify-between shadow-sm">
+             <div className="flex items-center gap-4">
+               <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
+                 <CheckCircle2 size={20} />
+               </div>
+               <div>
+                 <h4 className="text-sm font-bold text-slate-900 dark:text-white">System Status</h4>
+                 <p className="text-[10px] text-emerald-600 font-bold uppercase">Operational</p>
+               </div>
+             </div>
+             <div className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 rounded text-[8px] font-bold text-emerald-600 uppercase border border-emerald-200 dark:border-emerald-800/50">
+               Nominal
+             </div>
+           </div>
         </div>
 
-        {/* Recent Activity Table - Professional Layout */}
-        <div className="bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] rounded-2xl overflow-hidden shadow-sm">
-          <div className="px-6 py-4 border-b border-[hsl(var(--border-subtle))] flex items-center justify-between bg-[hsl(var(--text-main))]/[0.01]">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
-                <FileText className="w-4 h-4" />
-              </div>
-              <h3 className="text-xs font-bold text-[hsl(var(--text-main))] uppercase tracking-wider">Signals Infiltration Stream</h3>
-            </div>
-            <a href="/admin/logs" className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest flex items-center gap-1">
-              Deep Analysis <ChevronRight className="w-3 h-3" />
-            </a>
+        {/* Recent Activity Table */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/30">
+            <h3 className="text-[10px] font-bold text-slate-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
+              <FileText size={16} className="text-indigo-500" /> Activity Stream
+            </h3>
+            <button onClick={() => navigate('/admin/logs')} className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-widest transition-colors">View All Logs</button>
           </div>
           
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="text-[10px] font-bold text-[hsl(var(--text-muted))] uppercase tracking-wider border-b border-[hsl(var(--border-subtle))]">
-                  <th className="px-6 py-3">Analyst</th>
-                  <th className="px-6 py-3">Target Node</th>
-                  <th className="px-6 py-3">Impact</th>
-                  <th className="px-6 py-3">Telemetry</th>
-                  <th className="px-6 py-3 text-right">Reference</th>
+                <tr className="bg-white/[0.01] border-b border-slate-100 dark:border-slate-800">
+                  <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Researcher</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Program</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Impact</th>
+                  <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Time</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[hsl(var(--border-subtle))]">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {stats?.latestActivity.map((activity) => (
-                  <tr key={activity.id} className="hover:bg-[hsl(var(--text-main))]/[0.01] transition-colors group">
+                  <tr key={activity.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-[10px] font-bold text-indigo-400 ring-4 ring-[hsl(var(--bg-card))]">
+                        <div className="w-8 h-8 rounded bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-[10px] font-bold text-indigo-600">
                           {activity.researcher.firstName[0]}{activity.researcher.lastName[0]}
                         </div>
-                        <span className="text-sm font-semibold text-[hsl(var(--text-main))]">{activity.researcher.firstName} {activity.researcher.lastName}</span>
+                        <span className="text-sm font-bold text-slate-900 dark:text-white truncate max-w-[120px]">{activity.researcher.firstName} {activity.researcher.lastName}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-xs font-medium text-[hsl(var(--text-muted))] opacity-80">{activity.program.name}</span>
+                      <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{activity.program.name}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase border ${
+                      <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase border ${
                         activity.severity === 'CRITICAL' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
                         activity.severity === 'HIGH' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
                         'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
@@ -247,18 +230,15 @@ export default function AdminDashboard() {
                         {activity.severity}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-[10px] font-bold text-[hsl(var(--text-muted))] uppercase tracking-tight opacity-70">
-                        {new Date(activity.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(activity.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                       <ChevronRight className="w-4 h-4 ml-auto text-[hsl(var(--text-muted))] group-hover:text-indigo-400 transition-all group-hover:translate-x-0.5" />
+                    <td className="px-6 py-4 text-right text-[10px] font-bold text-slate-400">
+                        {new Date(activity.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </td>
                   </tr>
                 ))}
                 {(!stats?.latestActivity || stats.latestActivity.length === 0) && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-[hsl(var(--text-muted))] text-[10px] font-bold uppercase tracking-widest opacity-50">
-                      Zero infiltration signals active.
+                    <td colSpan={4} className="px-6 py-12 text-center text-slate-400 text-sm italic">
+                      Zero activity detected.
                     </td>
                   </tr>
                 )}
@@ -268,63 +248,45 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Invite Modal - Refined */}
+      {/* Invite Modal */}
       <AnimatePresence>
         {isInviteModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsInviteModalOpen(false)}
-              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
-            />
+            <div onClick={() => setIsInviteModalOpen(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] w-full max-w-md rounded-2xl overflow-hidden shadow-2xl"
+              className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-xl overflow-hidden shadow-2xl"
             >
-              <div className="p-6 border-b border-[hsl(var(--border-subtle))] flex items-center justify-between bg-[hsl(var(--text-main))]/[0.01]">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
-                    <Send className="w-4 h-4" />
-                  </div>
-                  <h3 className="text-xs font-bold text-[hsl(var(--text-main))] uppercase tracking-widest">Infiltrate Partner</h3>
-                </div>
-                <button 
-                  onClick={() => setIsInviteModalOpen(false)}
-                  className="p-1.5 hover:bg-[hsl(var(--text-main))]/[0.05] rounded-lg text-[hsl(var(--text-muted))] transition-colors"
-                >
-                  <X className="w-4 h-4" />
+              <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-widest">Invite Partner</h3>
+                <button onClick={() => setIsInviteModalOpen(false)} className="text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                  <X size={16} />
                 </button>
               </div>
               
-              <form onSubmit={handleInviteCompany} className="p-8 space-y-6">
-                <div>
-                  <label className="block text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3">
-                    Partner Intelligence Alias (Email)
-                  </label>
+              <form onSubmit={handleInviteCompany} className="p-6 space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Company Email</label>
                   <input
                     type="email"
                     required
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
-                    placeholder="security-alias@partner.node"
-                    className="w-full bg-[hsl(var(--bg-main))]/[0.02] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-xs text-[hsl(var(--text-main))] placeholder:opacity-30 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="partner@example.com"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-all"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3">
-                    Encrypted Protocol Message
-                  </label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Message (Optional)</label>
                   <textarea
                     value={customMessage}
                     onChange={(e) => setCustomMessage(e.target.value)}
-                    placeholder="Briefly describe the extraction parameters..."
-                    rows={4}
-                    className="w-full bg-[hsl(var(--text-main))]/[0.02] border border-[hsl(var(--border-subtle))] rounded-xl px-4 py-3 text-xs text-[hsl(var(--text-main))] placeholder:opacity-30 focus:border-indigo-500 outline-none transition-all resize-none font-medium"
+                    placeholder="Brief intro..."
+                    rows={3}
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-all resize-none"
                   />
                 </div>
                 
@@ -332,21 +294,16 @@ export default function AdminDashboard() {
                   <button
                     type="button"
                     onClick={() => setIsInviteModalOpen(false)}
-                    className="flex-1 px-4 py-3 bg-[hsl(var(--text-main))]/[0.05] hover:bg-[hsl(var(--text-main))]/[0.1] text-[hsl(var(--text-main))] text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all"
+                    className="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
                   >
-                    Abort
+                    Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSending}
-                    className="flex-2 px-8 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-all shadow-sm"
                   >
-                    {isSending ? 'Transmitting...' : (
-                      <>
-                        Transmit Invite
-                        <Send className="w-3.5 h-3.5" />
-                      </>
-                    )}
+                    {isSending ? 'Sending...' : 'Send Invite'}
                   </button>
                 </div>
               </form>

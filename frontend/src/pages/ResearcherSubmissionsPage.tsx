@@ -45,176 +45,148 @@ export default function ResearcherSubmissionsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'PAID': return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
-      case 'ACCEPTED': return 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20';
-      case 'TRIAGED': return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
-      case 'REJECTED': return 'bg-rose-500/10 text-rose-500 border-rose-500/20';
-      case 'DRAFT': return 'bg-slate-500/10 text-slate-500 border-slate-500/20';
-      default: return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+      case 'PAID': return 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500/20';
+      case 'ACCEPTED': return 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500/20';
+      case 'TRIAGED': return 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 border-amber-500/20';
+      case 'REJECTED': return 'text-rose-600 bg-rose-50 dark:bg-rose-900/20 border-rose-500/20';
+      case 'DRAFT': return 'text-slate-600 bg-slate-50 dark:bg-slate-900/20 border-slate-500/20';
+      default: return 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 border-blue-500/20';
     }
   };
 
   return (
     <DashboardLayout>
-      <div className="w-full max-w-7xl mx-auto space-y-8 pb-20">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
-           <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                 <div className="p-2.5 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-600/20">
-                    <FileText className="w-6 h-6" />
-                 </div>
-                 <h1 className="text-3xl font-black text-[hsl(var(--text-main))] tracking-tight uppercase">My Submissions</h1>
-              </div>
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.2em] ml-1">Central Repository of Security Intel</p>
-           </div>
-           
-           <div className="flex flex-wrap items-center gap-3">
-              <div className="relative group">
-                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
-                 <input 
-                   type="text"
-                   placeholder="SEARCH REPORTS..."
-                   value={searchTerm}
-                   onChange={(e) => setSearchTerm(e.target.value)}
-                   className="bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] rounded-2xl pl-11 pr-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-[hsl(var(--text-main))] focus:border-indigo-500/50 outline-none w-full md:w-64 transition-all"
-                 />
-              </div>
-              <div className="flex items-center gap-2 bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] rounded-2xl p-1">
-                 {['ALL', 'TRIAGED', 'ACCEPTED', 'PAID', 'DRAFT'].map((status) => (
-                    <button
-                      key={status}
-                      onClick={() => setFilterStatus(status)}
-                      className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
-                        filterStatus === status 
-                          ? 'bg-indigo-600 text-white shadow-lg' 
-                          : 'text-slate-500 hover:text-white hover:bg-white/5'
-                      }`}
-                    >
-                      {status}
-                    </button>
-                 ))}
-              </div>
-           </div>
+      <div className="w-full max-w-6xl mx-auto space-y-6 pb-20 p-4 md:p-8">
+        
+        {/* Simplified Header */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+               <FileText size={24} />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white">My Submissions</h1>
+              <p className="text-slate-500 text-sm">Review your security research findings</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <div className="relative flex-1 md:flex-none md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input 
+                type="text"
+                placeholder="Search reports..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-all"
+              />
+            </div>
+          </div>
         </div>
 
-        {/* Content Section */}
-        <div className="bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] rounded-[2.5rem] overflow-hidden shadow-2xl shadow-black/20">
+        {/* Status Filters */}
+        <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-xl shadow-sm overflow-x-auto no-scrollbar">
+           {['ALL', 'TRIAGED', 'ACCEPTED', 'PAID', 'DRAFT'].map((status) => (
+              <button
+                key={status}
+                onClick={() => setFilterStatus(status)}
+                className={`flex-shrink-0 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                  filterStatus === status 
+                    ? 'bg-indigo-600 text-white shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                {status}
+              </button>
+           ))}
+        </div>
+
+        {/* Reports Table - Compact and Clean */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
            <div className="overflow-x-auto">
               <table className="w-full text-left">
                  <thead>
-                    <tr className="bg-white/[0.01] border-b border-[hsl(var(--border-subtle))]">
-                       <th className="px-10 py-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.25em]">Report Detail</th>
-                       <th className="px-6 py-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.25em]">Program / Target</th>
-                       <th className="px-6 py-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.25em]">Current Status</th>
-                       <th className="px-10 py-6 text-right text-[10px] font-black text-slate-500 uppercase tracking-[0.25em]">Est. Payout</th>
+                    <tr className="bg-slate-50 dark:bg-slate-800/30 border-b border-slate-200 dark:border-slate-800">
+                       <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Report Detail</th>
+                       <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Program</th>
+                       <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</th>
+                       <th className="px-6 py-4 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Payout</th>
                     </tr>
                  </thead>
-                 <tbody className="divide-y divide-[hsl(var(--border-subtle))]">
+                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {loading ? (
-                      [1, 2, 3, 4].map(i => (
+                      Array(5).fill(0).map((_, i) => (
                         <tr key={i} className="animate-pulse">
-                          <td colSpan={4} className="px-10 py-8 bg-white/[0.01]">
-                             <div className="h-4 w-1/3 bg-white/5 rounded-full mb-2"></div>
-                             <div className="h-3 w-1/4 bg-white/5 rounded-full opacity-50"></div>
-                          </td>
+                          <td colSpan={4} className="px-6 py-6"><div className="h-4 w-1/3 bg-slate-100 dark:bg-slate-800 rounded"></div></td>
                         </tr>
                       ))
                     ) : filteredReports.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-10 py-32 text-center space-y-4">
-                           <div className="w-16 h-16 bg-slate-800/50 rounded-3xl flex items-center justify-center mx-auto text-slate-500 border border-white/5">
-                              <Shield className="w-8 h-8 opacity-20" />
-                           </div>
-                           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 italic">No corresponding signals found</p>
-                           <button 
-                             onClick={() => navigate('/researcher/programs')}
-                             className="text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 underline"
-                           >
-                             Discovery New Programs
-                           </button>
+                        <td colSpan={4} className="px-6 py-20 text-center text-slate-400 text-sm italic">
+                          No submissions found. 
+                          <button 
+                            onClick={() => navigate('/researcher/programs')} 
+                            className="ml-2 text-indigo-600 font-bold hover:underline"
+                          >
+                            Browse Programs
+                          </button>
                         </td>
                       </tr>
                     ) : (
-                      <AnimatePresence>
-                        {filteredReports.map((report, idx) => (
-                          <motion.tr 
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.03 }}
-                            key={report.id} 
-                            onClick={() => navigate(`/reports/${report.id}`)}
-                            className="hover:bg-[hsl(var(--text-main))]/[0.02] transition-all cursor-pointer group relative"
-                          >
-                            <td className="px-10 py-7">
-                               <div className="flex flex-col gap-1.5 min-w-[300px]">
-                                  <div className="flex items-center gap-3">
-                                     <span className="text-sm font-black text-white group-hover:text-indigo-400 transition-colors leading-tight truncate">{report.title}</span>
-                                     <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-40 transition-opacity" />
-                                  </div>
-                                  <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-widest text-slate-500">
-                                     <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(report.createdAt).toLocaleDateString()}</span>
-                                     <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-                                     <span className="flex items-center gap-1 text-slate-400">ID: {report.id.slice(-8).toUpperCase()}</span>
-                                  </div>
-                               </div>
-                            </td>
-                            <td className="px-6 py-7">
-                               <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-lg bg-indigo-500/5 flex items-center justify-center border border-indigo-500/10 text-indigo-400">
-                                     <AlertCircle className="w-4 h-4" />
-                                  </div>
-                                  <div className="flex flex-col">
-                                     <span className="text-xs font-black text-slate-300 uppercase tracking-tight">{report.program.name}</span>
-                                     <span className="text-[8px] font-black text-slate-600 uppercase tracking-[0.2em] mt-0.5">Verified Asset</span>
-                                  </div>
-                               </div>
-                            </td>
-                            <td className="px-6 py-7">
-                               <span className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${getStatusColor(report.status)} shadow-sm`}>
-                                  {report.status}
-                               </span>
-                            </td>
-                            <td className="px-10 py-7 text-right">
-                               <div className="flex flex-col items-end gap-1">
-                                  <div className="flex items-center gap-1.5 text-base font-black font-mono text-emerald-400">
-                                     {report.bountyAmount > 0 ? (
-                                       <>
-                                         <DollarSign className="w-4 h-4" />
-                                         {report.bountyAmount.toLocaleString()}
-                                       </>
-                                     ) : (
-                                       <span className="text-slate-600">PENDING</span>
-                                     )}
-                                  </div>
-                                  {report.status === 'PAID' && (
-                                    <span className="text-[8px] font-black text-emerald-500/50 uppercase tracking-widest">Transaction Settled</span>
-                                  )}
-                               </div>
-                            </td>
-                          </motion.tr>
-                        ))}
-                      </AnimatePresence>
+                      filteredReports.map((report) => (
+                        <tr 
+                          key={report.id} 
+                          onClick={() => navigate(`/reports/${report.id}`)}
+                          className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group"
+                        >
+                          <td className="px-6 py-4 text-sm">
+                             <div className="flex flex-col">
+                                <span className="font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 transition-all line-clamp-1">{report.title}</span>
+                                <span className="text-[10px] text-slate-500 flex items-center gap-2 mt-1">
+                                   <Clock size={10} /> {new Date(report.createdAt).toLocaleDateString()} • ID: {report.id.slice(-6).toUpperCase()}
+                                </span>
+                             </div>
+                          </td>
+                          <td className="px-6 py-4">
+                             <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 bg-slate-100 dark:bg-slate-800 rounded flex items-center justify-center text-slate-400">
+                                   <Shield size={12} />
+                                </div>
+                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{report.program.name}</span>
+                             </div>
+                          </td>
+                          <td className="px-6 py-4">
+                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(report.status)}`}>
+                                {report.status}
+                             </span>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                             <span className="text-sm font-bold font-mono text-emerald-600">
+                                {report.bountyAmount > 0 ? `$${report.bountyAmount.toLocaleString()}` : <span className="text-slate-400 text-[10px]">PENDING</span>}
+                             </span>
+                          </td>
+                        </tr>
+                      ))
                     )}
                  </tbody>
               </table>
            </div>
         </div>
 
-        {/* Global Stats Footer */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+        {/* Footer Stats - Compact */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
            {[
-             { label: 'Total Submissions', value: reports.length, icon: FileText, color: 'text-indigo-500' },
-             { label: 'Verified Findings', value: reports.filter(r => ['TRIAGED', 'ACCEPTED', 'PAID'].includes(r.status)).length, icon: Shield, color: 'text-emerald-500' },
-             { label: 'Cumulative Yield', value: `$${reports.reduce((p, c) => p + (c.bountyAmount || 0), 0).toLocaleString()}`, icon: DollarSign, color: 'text-amber-500' }
+             { label: 'Submissions', value: reports.length, icon: FileText, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
+             { label: 'Accepted', value: reports.filter(r => ['TRIAGED', 'ACCEPTED', 'PAID'].includes(r.status)).length, icon: Shield, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+             { label: 'Total Payout', value: `$${reports.reduce((p, c) => p + (c.bountyAmount || 0), 0).toLocaleString()}`, icon: DollarSign, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20' }
            ].map((stat) => (
-             <div key={stat.label} className="bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] p-6 rounded-[2rem] flex items-center justify-between group hover:border-white/10 transition-all">
-                <div className="space-y-1">
-                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{stat.label}</p>
-                   <p className="text-2xl font-black text-white">{stat.value}</p>
+             <div key={stat.label} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{stat.label}</p>
+                  <p className="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{stat.value}</p>
                 </div>
-                <div className={`p-4 bg-[hsl(var(--text-main))]/[0.02] rounded-2xl ${stat.color} group-hover:scale-110 transition-transform`}>
-                   <stat.icon className="w-6 h-6" />
+                <div className={`p-3 ${stat.bg} ${stat.color} rounded-lg`}>
+                   <stat.icon size={18} />
                 </div>
              </div>
            ))}

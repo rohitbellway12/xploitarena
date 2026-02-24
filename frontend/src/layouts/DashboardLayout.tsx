@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import Sidebar from '../components/Sidebar';
 import GlobalSearch from '../components/GlobalSearch';
@@ -5,6 +6,7 @@ import { User, Bell, Sun, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import api from '../api/axios';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -13,8 +15,25 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const userString = localStorage.getItem('user');
   const user = userString ? JSON.parse(userString) : null;
+
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const { data } = await api.get('/notifications/unread-count');
+        setUnreadCount(data.count);
+      } catch (error) {
+        console.error('Failed to fetch unread count:', error);
+      }
+    };
+
+    fetchUnreadCount();
+    // Refresh count every 60 seconds
+    const interval = setInterval(fetchUnreadCount, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-[hsl(var(--bg-main))] text-[hsl(var(--text-main))] font-sans selection:bg-indigo-500/30 transition-colors duration-300">
@@ -49,7 +68,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 className="p-2.5 text-[hsl(var(--text-muted))] hover:text-indigo-500 transition-all relative group rounded-xl hover:bg-indigo-500/5"
               >
                 <Bell className="w-4.5 h-4.5" />
-                <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-indigo-500 rounded-full ring-2 ring-[hsl(var(--bg-card))]"></span>
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 min-w-[14px] h-[14px] px-1 bg-indigo-600 text-[8px] font-bold text-white rounded-full flex items-center justify-center border border-[hsl(var(--bg-card))] transition-all animate-in zoom-in duration-300">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </button>
             </div>
 

@@ -2,16 +2,16 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { 
   User, 
-  Mail, 
   Shield, 
-  Clock, 
-  Calendar,
-  CheckCircle2,
-  AlertCircle,
-  Hash,
-  Activity
+  Lock,
+  Globe,
+  Phone,
+  FileText,
+  Save,
+  Key
 } from 'lucide-react';
 import api from '../api/axios';
+import { toast } from 'react-hot-toast';
 
 interface UserProfile {
   id: string;
@@ -21,19 +21,54 @@ interface UserProfile {
   role: string;
   isVerified: boolean;
   createdAt: string;
+  username?: string;
+  website?: string;
+  phone?: string;
+  biography?: string;
+  address?: string;
 }
 
 export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  
+  // Profile Form State
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    username: '',
+    website: '',
+    phone: '',
+    biography: '',
+    address: ''
+  });
+
+  // Password Form State
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const response = await api.get('/auth/me');
-        setUser(response.data);
+        const data = response.data;
+        setUser(data);
+        setFormData({
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          username: data.username || '',
+          website: data.website || '',
+          phone: data.phone || '',
+          biography: data.biography || '',
+          address: data.address || ''
+        });
       } catch (error) {
         console.error('Failed to fetch profile:', error);
+        toast.error('Failed to load profile data');
       } finally {
         setLoading(false);
       }
@@ -41,18 +76,46 @@ export default function ProfilePage() {
     fetchProfile();
   }, []);
 
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpdating(true);
+    try {
+      const response = await api.put('/auth/profile', formData);
+      setUser(response.data.user);
+      toast.success('Profile updated successfully');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      return toast.error('Passwords do not match');
+    }
+    
+    setUpdating(true);
+    try {
+      await api.put('/auth/change-password', {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+      toast.success('Password updated successfully');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to change password');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="w-full max-w-4xl mx-auto space-y-8 animate-pulse p-4">
-          <div className="flex items-center gap-6">
-            <div className="w-24 h-24 bg-white/5 rounded-full"></div>
-            <div className="space-y-3">
-              <div className="h-6 w-48 bg-white/5 rounded"></div>
-              <div className="h-4 w-32 bg-white/5 rounded"></div>
-            </div>
-          </div>
-          <div className="h-64 bg-white/5 rounded-2xl"></div>
+        <div className="p-8 flex justify-center">
+          <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
         </div>
       </DashboardLayout>
     );
@@ -60,137 +123,170 @@ export default function ProfilePage() {
 
   if (!user) return (
     <DashboardLayout>
-       <div className="p-12 text-center text-[hsl(var(--text-muted))] uppercase tracking-widest font-black text-xs">
-          Profile data Unavailable
+       <div className="p-12 text-center text-slate-500">
+          Profile data unavailable
        </div>
     </DashboardLayout>
   );
 
-  const getRoleColor = (role: string) => {
-    switch(role) {
-      case 'ADMIN': case 'SUPER_ADMIN': return 'text-rose-500 bg-rose-500/10 border-rose-500/20';
-      case 'RESEARCHER': return 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20';
-      case 'COMPANY_ADMIN': return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
-      default: return 'text-[hsl(var(--text-muted))] bg-[hsl(var(--text-main))]/[0.05] border-[hsl(var(--border-subtle))]';
-    }
-  };
+  const isCompany = user.role === 'COMPANY_ADMIN';
 
   return (
     <DashboardLayout>
-      <div className="w-full max-w-4xl mx-auto space-y-10 pb-20">
-        {/* Profile Card */}
-        <div className="relative group">
-           <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-3xl blur opacity-30"></div>
-           <div className="relative bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] rounded-3xl overflow-hidden backdrop-blur-xl shadow-sm">
-              <div className="h-32 bg-gradient-to-r from-indigo-900/50 via-slate-900 to-purple-900/50 border-b border-[hsl(var(--border-subtle))] opacity-80"></div>
-              <div className="px-8 pb-10">
-                <div className="flex flex-col md:flex-row md:items-end gap-6 -mt-12 mb-8">
-                   <div className="relative">
-                    <div className="w-32 h-32 rounded-3xl bg-[hsl(var(--bg-main))] border-4 border-[hsl(var(--bg-card))] flex items-center justify-center overflow-hidden shadow-2xl">
-                      <User className="w-16 h-16 text-[hsl(var(--text-muted))]" />
-                    </div>
-                    {user.isVerified && (
-                      <div className="absolute -right-2 -bottom-2 bg-emerald-500 text-white p-1.5 rounded-xl shadow-lg border border-[hsl(var(--bg-card))]">
-                        <CheckCircle2 className="w-4 h-4" />
-                      </div>
-                    )}
+      <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-8 pb-20">
+        <header className="flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+          <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+            <User size={32} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{user.firstName} {user.lastName}</h1>
+            <p className="text-slate-500 text-sm flex items-center gap-1">
+              <Shield size={14} /> {user.role} • {user.email}
+            </p>
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column: Profile Info */}
+          <div className="lg:col-span-2 space-y-6">
+            <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+              <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  <FileText size={18} className="text-indigo-500" /> Personal Information
+                </h3>
+              </div>
+              <form onSubmit={handleUpdateProfile} className="p-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">First Name</label>
+                    <input 
+                      type="text" 
+                      value={formData.firstName}
+                      onChange={e => setFormData({...formData, firstName: e.target.value})}
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-medium"
+                    />
                   </div>
-                  <div className="flex-1 space-y-2">
-                    <h1 className="text-3xl font-black text-[hsl(var(--text-main))] tracking-tight leading-none">
-                      {user.firstName} {user.lastName}
-                    </h1>
-                    <div className="flex items-center gap-2">
-                       <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${getRoleColor(user.role)}`}>
-                         {user.role} Finding Analyst
-                       </span>
-                       <span className="text-[hsl(var(--text-muted))] text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
-                         <Hash className="w-3 h-3" />
-                         ID: {user.id.slice(0, 8)}
-                       </span>
-                    </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Last Name</label>
+                    <input 
+                      type="text" 
+                      value={formData.lastName}
+                      onChange={e => setFormData({...formData, lastName: e.target.value})}
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-medium"
+                    />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-[hsl(var(--border-subtle))]">
-                   <div className="space-y-6">
-                      <h3 className="text-[10px] font-black text-[hsl(var(--text-muted))] uppercase tracking-[0.2em] mb-4">Identity Details</h3>
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-4 group/item">
-                           <div className="w-9 h-9 rounded-xl bg-[hsl(var(--text-main))]/[0.02] border border-[hsl(var(--border-subtle))] flex items-center justify-center text-[hsl(var(--text-muted))] group-hover/item:text-indigo-400 group-hover/item:border-indigo-500/20 transition-all">
-                              <Mail className="w-4 h-4" />
-                           </div>
-                           <div>
-                              <p className="text-[8px] font-black text-[hsl(var(--text-muted))] uppercase tracking-widest">Email Address</p>
-                              <p className="text-sm font-bold text-[hsl(var(--text-main))]">{user.email}</p>
-                           </div>
-                        </div>
-                        <div className="flex items-center gap-4 group/item">
-                           <div className="w-9 h-9 rounded-xl bg-[hsl(var(--text-main))]/[0.02] border border-[hsl(var(--border-subtle))] flex items-center justify-center text-[hsl(var(--text-muted))] group-hover/item:text-rose-400 group-hover/item:border-rose-500/20 transition-all">
-                              <Shield className="w-4 h-4" />
-                           </div>
-                           <div>
-                              <p className="text-[8px] font-black text-[hsl(var(--text-muted))] uppercase tracking-widest">Account Status</p>
-                              <p className={`text-sm font-bold ${user.isVerified ? 'text-emerald-500' : 'text-amber-500'}`}>
-                                {user.isVerified ? 'Security Verified' : 'Awaiting Verification'}
-                              </p>
-                           </div>
-                        </div>
-                      </div>
-                   </div>
-
-                   <div className="space-y-6">
-                      <h3 className="text-[10px] font-black text-[hsl(var(--text-muted))] uppercase tracking-[0.2em] mb-4">Platform Activity</h3>
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-4 group/item">
-                           <div className="w-9 h-9 rounded-xl bg-[hsl(var(--text-main))]/[0.02] border border-[hsl(var(--border-subtle))] flex items-center justify-center text-[hsl(var(--text-muted))] group-hover/item:text-amber-400 group-hover/item:border-amber-500/20 transition-all">
-                              <Calendar className="w-4 h-4" />
-                           </div>
-                           <div>
-                              <p className="text-[8px] font-black text-[hsl(var(--text-muted))] uppercase tracking-widest">Registry Date</p>
-                              <p className="text-sm font-bold text-[hsl(var(--text-main))]">
-                                {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                              </p>
-                           </div>
-                        </div>
-                        <div className="flex items-center gap-4 group/item">
-                           <div className="w-9 h-9 rounded-xl bg-[hsl(var(--text-main))]/[0.02] border border-[hsl(var(--border-subtle))] flex items-center justify-center text-[hsl(var(--text-muted))] group-hover/item:text-indigo-400 group-hover/item:border-indigo-500/20 transition-all">
-                              <Activity className="w-4 h-4" />
-                           </div>
-                           <div>
-                              <p className="text-[8px] font-black text-[hsl(var(--text-muted))] uppercase tracking-widest">Global Rank Signal</p>
-                              <p className="text-sm font-bold text-[hsl(var(--text-main))]">Standard Tier Access</p>
-                           </div>
-                        </div>
-                      </div>
-                   </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Username</label>
+                  <input 
+                    type="text" 
+                    value={formData.username}
+                    onChange={e => setFormData({...formData, username: e.target.value})}
+                    placeholder="@username"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-medium"
+                  />
                 </div>
-              </div>
-           </div>
-        </div>
 
-        {/* Action Triggers */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-           <div className="p-8 bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] rounded-3xl hover:border-indigo-500/20 transition-all group shadow-sm">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 flex items-center justify-center text-indigo-400 mb-6">
-                 <Clock className="w-6 h-6" />
+                {isCompany && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                          <Globe size={12} /> Website
+                        </label>
+                        <input 
+                          type="url" 
+                          value={formData.website}
+                          onChange={e => setFormData({...formData, website: e.target.value})}
+                          placeholder="https://example.com"
+                          className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-medium"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                          <Phone size={12} /> Phone
+                        </label>
+                        <input 
+                          type="tel" 
+                          value={formData.phone}
+                          onChange={e => setFormData({...formData, phone: e.target.value})}
+                          placeholder="+1234567890"
+                          className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-medium"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Biography</label>
+                      <textarea 
+                        rows={3}
+                        value={formData.biography}
+                        onChange={e => setFormData({...formData, biography: e.target.value})}
+                        placeholder="Tell us about your company..."
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all font-medium resize-none"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <button 
+                  type="submit"
+                  disabled={updating}
+                  className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white px-6 py-2 rounded-lg font-bold text-sm transition-all shadow-sm"
+                >
+                  <Save size={16} /> {updating ? 'Saving...' : 'Save Changes'}
+                </button>
+              </form>
+            </section>
+          </div>
+
+          {/* Right Column: Security */}
+          <div className="space-y-6">
+            <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+              <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Lock size={18} className="text-rose-500" /> Security
+                </h3>
               </div>
-              <h4 className="text-lg font-bold text-[hsl(var(--text-main))] mb-2">Security Sessions</h4>
-              <p className="text-xs text-[hsl(var(--text-muted))] leading-relaxed mb-6">Review your active operational sessions across multiple nodes and platforms.</p>
-              <button className="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-indigo-500 transition-colors">
-                Initialize Audit
-              </button>
-           </div>
-           
-           <div className="p-8 bg-[hsl(var(--bg-card))] border border-[hsl(var(--border-subtle))] rounded-3xl hover:border-rose-500/20 transition-all group shadow-sm">
-              <div className="w-12 h-12 rounded-2xl bg-rose-500/5 border border-rose-500/10 flex items-center justify-center text-rose-500 mb-6">
-                 <AlertCircle className="w-6 h-6" />
-              </div>
-              <h4 className="text-lg font-bold text-[hsl(var(--text-main))] mb-2">Account Quarantine</h4>
-              <p className="text-xs text-[hsl(var(--text-muted))] leading-relaxed mb-6">Permanent deactivation of platform access and historical finding signals.</p>
-              <button className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:text-rose-400 transition-colors">
-                Deactivate analyst
-              </button>
-           </div>
+              <form onSubmit={handleChangePassword} className="p-6 space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Current Password</label>
+                  <input 
+                    type="password" 
+                    value={passwordData.currentPassword}
+                    onChange={e => setPasswordData({...passwordData, currentPassword: e.target.value})}
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-rose-500/30 focus:border-rose-500 transition-all font-medium"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">New Password</label>
+                  <input 
+                    type="password" 
+                    value={passwordData.newPassword}
+                    onChange={e => setPasswordData({...passwordData, newPassword: e.target.value})}
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-rose-500/30 focus:border-rose-500 transition-all font-medium"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Confirm New Password</label>
+                  <input 
+                    type="password" 
+                    value={passwordData.confirmPassword}
+                    onChange={e => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-rose-500/30 focus:border-rose-500 transition-all font-medium"
+                  />
+                </div>
+                <button 
+                  type="submit"
+                  disabled={updating}
+                  className="w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white px-6 py-2 rounded-lg font-bold text-sm transition-all shadow-sm"
+                >
+                  <Key size={16} /> {updating ? 'Updating...' : 'Update Password'}
+                </button>
+              </form>
+            </section>
+          </div>
         </div>
       </div>
     </DashboardLayout>

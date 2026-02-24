@@ -3,7 +3,6 @@ import DashboardLayout from '../layouts/DashboardLayout';
 import { 
   Shield, 
   Bell, 
-  User, 
   Mail, 
   Zap, 
   Palette, 
@@ -14,7 +13,7 @@ import api from '../api/axios';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
-type TabType = 'security' | 'notifications' | 'account' | 'smtp' | 'ratelimit' | 'branding';
+type TabType = 'security' | 'notifications' | 'smtp' | 'ratelimit' | 'branding';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('security');
@@ -26,6 +25,11 @@ export default function SettingsPage() {
   const [smtp, setSmtp] = useState({ host: '', port: '', user: '', pass: '', secure: false });
   const [traffic, setTraffic] = useState({ apiLimit: 100, lockoutTime: 15 });
   const [branding, setBranding] = useState({ title: 'XploitArena', logo: '' });
+  const [notifications, setNotifications] = useState({
+    emailAlerts: true,
+    reportUpdates: true,
+    securityAlerts: true
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
   const SERVER_URL = API_BASE_URL.replace('/api', '');
@@ -104,6 +108,19 @@ export default function SettingsPage() {
     }
   };
 
+
+  const handleSaveNotifications = async () => {
+    setUpdating(true);
+    try {
+      await api.put('/auth/notifications', notifications);
+      toast.success('Preferences synchronized');
+    } catch (error: any) {
+      toast.error('Failed to update preferences');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -125,7 +142,6 @@ export default function SettingsPage() {
   const tabs = [
     { id: 'security', name: 'Security', icon: Shield },
     { id: 'notifications', name: 'Notifications', icon: Bell },
-    { id: 'account', name: 'Profile', icon: User },
     ...(isAdmin ? [
       { id: 'smtp', name: 'SMTP', icon: Mail },
       { id: 'ratelimit', name: 'Rate Limit', icon: Zap },
@@ -224,20 +240,47 @@ export default function SettingsPage() {
                     )}
 
                     {activeTab === 'notifications' && (
-                       <div className="py-20 text-center opacity-40">
-                          <Bell className="w-10 h-10 text-[hsl(var(--text-muted))] mx-auto mb-4" />
-                          <h3 className="text-lg font-bold">Notifications</h3>
-                          <p className="text-xs mt-1">Coming soon in future updates.</p>
+                       <div className="space-y-8">
+                          <div>
+                             <h3 className="text-xl font-bold">Notifications</h3>
+                             <p className="text-xs text-[hsl(var(--text-muted))] mt-1">Configure how you receive alerts.</p>
+                          </div>
+
+                          <div className="space-y-4">
+                             {[
+                               { id: 'emailAlerts', title: 'Email Alerts', desc: 'Receive critical updates via email' },
+                               { id: 'reportUpdates', title: 'Report Activities', desc: 'Updates on your submission status' },
+                               { id: 'securityAlerts', title: 'Security Alerts', desc: 'Alerts for new logins or profile changes' }
+                             ].map((item) => (
+                                <div key={item.id} className="p-5 bg-white/5 border border-[hsl(var(--border-subtle))] rounded-2xl flex items-center justify-between">
+                                   <div>
+                                      <h4 className="text-sm font-bold">{item.title}</h4>
+                                      <p className="text-[10px] text-[hsl(var(--text-muted))]">{item.desc}</p>
+                                   </div>
+                                   <button 
+                                     onClick={() => setNotifications({ ...notifications, [item.id]: !notifications[item.id as keyof typeof notifications] })}
+                                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                                       notifications[item.id as keyof typeof notifications] ? 'bg-indigo-600' : 'bg-white/10'
+                                     }`}
+                                   >
+                                     <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                                       notifications[item.id as keyof typeof notifications] ? 'translate-x-4.5' : 'translate-x-1'
+                                     }`} />
+                                   </button>
+                                </div>
+                             ))}
+                          </div>
+
+                          <button 
+                            onClick={handleSaveNotifications}
+                            disabled={updating}
+                            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-indigo-600/10"
+                          >
+                             Sync Preferences
+                          </button>
                        </div>
                     )}
 
-                     {activeTab === 'account' && (
-                        <div className="py-20 text-center opacity-40">
-                           <User className="w-10 h-10 text-[hsl(var(--text-muted))] mx-auto mb-4" />
-                           <h3 className="text-lg font-bold">Profile</h3>
-                           <p className="text-xs mt-1">Profile management coming soon.</p>
-                        </div>
-                     )}
 
                       {activeTab === 'smtp' && (
                          <div className="space-y-6">
