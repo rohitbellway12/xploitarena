@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import api from '../api/axios';
 import { 
   LayoutDashboard, 
   Search, 
@@ -28,6 +30,36 @@ interface NavItem {
 export default function Sidebar({ role }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [branding, setBranding] = useState<any>({ title: '', logo: '' });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        // First try to get from localStorage (for immediate update)
+        const storedBranding = localStorage.getItem('branding_config');
+        if (storedBranding) {
+          setBranding(JSON.parse(storedBranding));
+        }
+        // Then fetch from server
+        const res = await api.get('/settings/branding');
+        const s = res.data || {};
+        if (s.branding_config) {
+          setBranding(s.branding_config);
+          localStorage.setItem('branding_config', JSON.stringify(s.branding_config));
+        }
+      } catch (err) {
+        console.error('Failed to fetch branding in sidebar:', err);
+      }
+    };
+    fetchSettings();
+
+    // Listen for branding updates from other components
+    const handleBrandingUpdate = () => {
+      fetchSettings();
+    };
+    window.addEventListener('branding-updated', handleBrandingUpdate);
+    return () => window.removeEventListener('branding-updated', handleBrandingUpdate);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -57,8 +89,6 @@ export default function Sidebar({ role }: SidebarProps) {
     { name: 'Overview', path: '/company/dashboard', icon: LayoutDashboard, permission: 'company:stats' },
     { name: 'Programs', path: '/company/programs', icon: ShieldCheck, permission: 'company:programs' },
     { name: 'Events', path: '/events', icon: Trophy },
-    { name: 'Asset Management', path: '#', icon: Building2 },
-    { name: 'Security Review', path: '#', icon: CheckCircle2 },
     { name: 'Team', path: '/team-management', icon: Users, permission: 'company:team' },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
@@ -109,11 +139,23 @@ export default function Sidebar({ role }: SidebarProps) {
   return (
     <aside className="w-64 bg-[hsl(var(--bg-card))] border-r border-[hsl(var(--border-subtle))] flex flex-col h-screen sticky top-0 overflow-hidden transition-colors duration-300">
       <div className="p-8 flex items-center gap-3">
-        <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/10 ring-1 ring-white/10 shrink-0">
-          <Cpu className="w-5 h-5" />
+        <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/10 ring-1 ring-white/10 shrink-0 overflow-hidden">
+          {branding?.logo ? (
+            <img 
+              src={branding.logo} 
+              alt="Logo" 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                console.error('Sidebar logo load error:', e);
+                console.error('Sidebar logo src:', (e.target as HTMLImageElement).src);
+              }}
+            />
+          ) : (
+            <Cpu className="w-5 h-5" />
+          )}
         </div>
         <div className="flex flex-col">
-          <span className="text-lg font-bold tracking-tight text-[hsl(var(--text-main))] uppercase">Xploit<span className="text-indigo-400">Arena</span></span>
+          <span className="text-lg font-bold tracking-tight text-[hsl(var(--text-main))] uppercase">{branding?.title || 'Xploit'}<span className="text-indigo-400">{branding?.title ? '' : 'Arena'}</span></span>
           <span className="text-[8px] font-bold text-[hsl(var(--text-muted))] tracking-[0.3em] uppercase opacity-70">Security Nexus</span>
         </div>
       </div>

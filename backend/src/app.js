@@ -38,8 +38,8 @@ const PORT = process.env.PORT || 3000;
 const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
 
 // ---- Middleware ----
-app.use(helmet()); // Security headers
-app.use(cors()); // Cross-Origin Resource Sharing
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } })); // Security headers
+app.use(cors({ origin: true, credentials: true })); // Cross-Origin Resource Sharing
 app.use(morgan('combined')); // HTTP request logging
 app.use(express.json({ limit: '10kb' })); // Body parsing for JSON
 

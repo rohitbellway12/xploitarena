@@ -410,11 +410,34 @@ export default function SettingsPage() {
                                       const res = await api.post('/upload', formData, {
                                         headers: { 'Content-Type': 'multipart/form-data' }
                                       });
-                                      const logoUrl = `${SERVER_URL}${res.data.file.url}`;
-                                      const newBranding = { ...branding, logo: logoUrl };
+                                      console.log('Upload response:', res.data);
+                                      // Ensure URL has /api prefix
+                                      let logoUrl = res.data.file.url;
+                                      if (!logoUrl.startsWith('/api')) {
+                                        logoUrl = '/api' + logoUrl;
+                                      }
+                                      const fullLogoUrl = `${SERVER_URL}${logoUrl}`;
+                                      console.log('Full logo URL:', fullLogoUrl);
+                                      // Test if the logo URL is accessible (with auth)
+                                      try {
+                                        const testRes = await api.get(fullLogoUrl.replace(API_BASE_URL, ''));
+                                        console.log('Logo URL test with auth - Status:', testRes.status);
+                                      } catch (testErr: any) {
+                                        console.error('Logo URL test error:', testErr.response?.status, testErr.message);
+                                        if (testErr.response?.status === 401) {
+                                          toast.error('Authentication required for logo');
+                                        } else if (testErr.response?.status === 404) {
+                                          toast.error('Logo file not found on server');
+                                        }
+                                      }
+                                      const newBranding = { ...branding, logo: fullLogoUrl };
                                       setBranding(newBranding);
                                       await api.post('/settings/update', { key: 'branding_config', value: newBranding });
+                                      // Force refresh branding in localStorage for sidebar
+                                      localStorage.setItem('branding_config', JSON.stringify(newBranding));
                                       toast.success('Logo uploaded and saved');
+                                      // Force window to dispatch event for sidebar to refresh
+                                      window.dispatchEvent(new Event('branding-updated'));
                                     } catch (err) {
                                       toast.error('Logo upload failed');
                                     } finally {
@@ -428,7 +451,16 @@ export default function SettingsPage() {
                                 className="w-24 h-24 rounded-2xl bg-white/5 border border-dashed border-[hsl(var(--border-subtle))] flex flex-col items-center justify-center gap-1 group cursor-pointer hover:border-indigo-500/40 transition-colors overflow-hidden"
                               >
                                  {branding.logo ? (
-                                   <img src={branding.logo} alt="Logo" className="w-full h-full object-cover" />
+                                   <img 
+                                     src={branding.logo} 
+                                     alt="Logo" 
+                                     className="w-full h-full object-cover"
+                                     onError={(e) => {
+                                       console.error('Logo load error:', e);
+                                       console.error('Logo load error - target src:', (e.target as HTMLImageElement).src);
+                                       (e.target as HTMLImageElement).style.display = 'none';
+                                     }}
+                                   />
                                  ) : (
                                    <>
                                      <Palette className="w-5 h-5 text-[hsl(var(--text-muted))] group-hover:text-indigo-400" />

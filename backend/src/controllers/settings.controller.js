@@ -60,3 +60,13 @@ exports.bulkUpdateSettings = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+exports.getBranding = async (req, res) => {
+  try {
+    const settingService = require('../services/setting.service');
+    const branding = await settingService.get('branding_config', { title: 'XploitArena', logo: '' });
+    res.json({ branding_config: branding });
+  } catch (error) {
+    console.error('Get Branding Error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
