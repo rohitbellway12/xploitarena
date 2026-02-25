@@ -11,7 +11,6 @@ import {
   Trophy, 
   ShieldCheck,
   Building2,
-  CheckCircle2,
   Cpu,
   type LucideIcon
 } from 'lucide-react';
