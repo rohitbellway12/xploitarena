@@ -5,8 +5,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import api from '../api/axios';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
-// ... (schemas and types same as before)
+// ... (keep schemas and types)
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
@@ -21,6 +22,7 @@ type MFAFormValues = z.infer<typeof mfaSchema>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showMFA, setShowMFA] = useState(false);
   const [mfaUserId, setMfaUserId] = useState<string | null>(null);
 
@@ -40,6 +42,26 @@ export default function LoginPage() {
     resolver: zodResolver(mfaSchema),
   });
 
+  const handleLoginSuccess = (data: any) => {
+    const { accessToken, refreshToken, user } = data;
+    
+    // Update AuthContext (it also syncs localStorage)
+    login(accessToken, user);
+    
+    // Store refresh token separately if needed
+    localStorage.setItem('refreshToken', refreshToken);
+
+    if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+      navigate('/admin/dashboard');
+    } else if (user.role === 'COMPANY_ADMIN') {
+      navigate('/company/dashboard');
+    } else if (user.role === 'TRIAGER') {
+      navigate('/triager/dashboard');
+    } else {
+      navigate('/researcher/dashboard');
+    }
+  };
+
   const onLoginSubmit = async (data: LoginFormValues) => {
     try {
       const response = await api.post('/auth/login', data);
@@ -58,8 +80,6 @@ export default function LoginPage() {
     }
   };
 
-
-
   const onMFASubmit = async (data: MFAFormValues) => {
     try {
       const response = await api.post('/auth/verify-2fa', {
@@ -72,22 +92,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleLoginSuccess = (data: any) => {
-    const { accessToken, refreshToken, user } = data;
-    localStorage.setItem('token', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    localStorage.setItem('user', JSON.stringify(user));
-
-    if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
-      navigate('/admin/dashboard');
-    } else if (user.role === 'COMPANY_ADMIN') {
-      navigate('/company/dashboard');
-    } else if (user.role === 'TRIAGER') {
-      navigate('/triager/dashboard');
-    } else {
-      navigate('/researcher/dashboard');
-    }
-  };
 
   return (
     <div className="dark flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-[hsl(var(--bg-main))] text-[hsl(var(--text-main))] font-sans transition-colors duration-300">

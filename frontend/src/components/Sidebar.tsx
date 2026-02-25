@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
 import { 
   LayoutDashboard, 
   Search, 
@@ -29,6 +30,7 @@ interface NavItem {
 export default function Sidebar({ role }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout } = useAuth();
   const [branding, setBranding] = useState<any>({ title: '', logo: '' });
 
   useEffect(() => {
@@ -61,13 +63,10 @@ export default function Sidebar({ role }: SidebarProps) {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    logout();
     navigate('/login');
   };
 
-  const userString = localStorage.getItem('user');
-  const user = userString ? JSON.parse(userString) : null;
   const permissions = user?.permissions || [];
   const isRoot = !user?.parentId;
 

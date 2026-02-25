@@ -6,6 +6,7 @@ import { User, Bell, Sun, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 interface DashboardLayoutProps {
@@ -15,9 +16,8 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState<number>(0);
-  const userString = localStorage.getItem('user');
-  const user = userString ? JSON.parse(userString) : null;
 
   useEffect(() => {
     const fetchUnreadCount = async () => {

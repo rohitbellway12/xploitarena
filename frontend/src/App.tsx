@@ -40,6 +40,7 @@ import InboxPage from './pages/InboxPage';
 import ResearcherSubmissionsPage from './pages/ResearcherSubmissionsPage';
 import ResearcherTeamsPage from './pages/ResearcherTeamsPage';
 import AdminReportsPage from './pages/AdminReportsPage';
+import ProtectedRoute from './components/ProtectedRoute';
 
 const queryClient = new QueryClient();
 
@@ -59,44 +60,45 @@ function App() {
             <Route path="/auth/github/callback" element={<GitHubCallback />} />
             
             {/* Dashboard Routes */}
-            <Route path="/researcher/dashboard" element={<ResearcherDashboard />} />
-            <Route path="/researcher/programs" element={<ProgramsPage />} />
-            <Route path="/researcher/leaderboard" element={<LeaderboardPage />} />
-            <Route path="/researcher/submissions" element={<ResearcherSubmissionsPage />} />
-            <Route path="/researcher/events" element={<EventsPage />} />
-            <Route path="/events" element={<EventsPage />} />
-            <Route path="/researcher/teams" element={<ResearcherTeamsPage />} />
-            <Route path="/programs/:id" element={<ProgramDetailPage />} />
-            <Route path="/programs/:programId/submit" element={<SubmitReportPage />} />
-            <Route path="/reports/:reportId" element={<SubmitReportPage />} />
-            <Route path="/company/dashboard" element={<CompanyDashboard />} />
-            <Route path="/company/verify" element={<CompanyKybPage />} />
-            <Route path="/company/programs" element={<CompanyProgramsPage />} />
-            <Route path="/company/programs/edit/:id" element={<EditProgramPage />} />
-            <Route path="/company/create-program" element={<CreateProgramPage />} />
-            <Route path="/company/team" element={<CompanyTeamPage />} />
+            <Route path="/researcher/dashboard" element={<ProtectedRoute allowedRoles={['RESEARCHER', 'ADMIN', 'SUPER_ADMIN']}><ResearcherDashboard /></ProtectedRoute>} />
+            <Route path="/researcher/programs" element={<ProtectedRoute allowedRoles={['RESEARCHER', 'ADMIN', 'SUPER_ADMIN']}><ProgramsPage /></ProtectedRoute>} />
+            <Route path="/researcher/leaderboard" element={<ProtectedRoute allowedRoles={['RESEARCHER', 'ADMIN', 'SUPER_ADMIN']}><LeaderboardPage /></ProtectedRoute>} />
+            <Route path="/researcher/submissions" element={<ProtectedRoute allowedRoles={['RESEARCHER', 'ADMIN', 'SUPER_ADMIN']}><ResearcherSubmissionsPage /></ProtectedRoute>} />
+            <Route path="/researcher/events" element={<ProtectedRoute allowedRoles={['RESEARCHER', 'ADMIN', 'SUPER_ADMIN']}><EventsPage /></ProtectedRoute>} />
+            <Route path="/events" element={<ProtectedRoute allowedRoles={['RESEARCHER', 'ADMIN', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'TRIAGER']}><EventsPage /></ProtectedRoute>} />
+            <Route path="/researcher/teams" element={<ProtectedRoute allowedRoles={['RESEARCHER', 'ADMIN', 'SUPER_ADMIN']}><ResearcherTeamsPage /></ProtectedRoute>} />
+            <Route path="/programs/:id" element={<ProtectedRoute><ProgramDetailPage /></ProtectedRoute>} />
+            <Route path="/programs/:programId/submit" element={<ProtectedRoute allowedRoles={['RESEARCHER', 'ADMIN', 'SUPER_ADMIN']}><SubmitReportPage /></ProtectedRoute>} />
+            <Route path="/reports/:reportId" element={<ProtectedRoute><SubmitReportPage /></ProtectedRoute>} />
             
+            <Route path="/company/dashboard" element={<ProtectedRoute allowedRoles={['COMPANY_ADMIN', 'ADMIN', 'SUPER_ADMIN']}><CompanyDashboard /></ProtectedRoute>} />
+            <Route path="/company/verify" element={<ProtectedRoute allowedRoles={['COMPANY_ADMIN', 'ADMIN', 'SUPER_ADMIN']}><CompanyKybPage /></ProtectedRoute>} />
+            <Route path="/company/programs" element={<ProtectedRoute allowedRoles={['COMPANY_ADMIN', 'ADMIN', 'SUPER_ADMIN']}><CompanyProgramsPage /></ProtectedRoute>} />
+            <Route path="/company/programs/edit/:id" element={<ProtectedRoute allowedRoles={['COMPANY_ADMIN', 'ADMIN', 'SUPER_ADMIN']}><EditProgramPage /></ProtectedRoute>} />
+            <Route path="/company/create-program" element={<ProtectedRoute allowedRoles={['COMPANY_ADMIN', 'ADMIN', 'SUPER_ADMIN']}><CreateProgramPage /></ProtectedRoute>} />
+            <Route path="/company/team" element={<ProtectedRoute allowedRoles={['COMPANY_ADMIN', 'ADMIN', 'SUPER_ADMIN']}><CompanyTeamPage /></ProtectedRoute>} />
+            
+            <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/researchers" element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}><AdminResearcherList /></ProtectedRoute>} />
+            <Route path="/admin/companies" element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}><AdminCompanyList /></ProtectedRoute>} />
+            <Route path="/admin/triagers" element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}><TriagersPage /></ProtectedRoute>} />
+            <Route path="/admin/logs" element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}><AdminAuditLogs /></ProtectedRoute>} />
+            <Route path="/admin/approvals" element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}><AdminApprovals /></ProtectedRoute>} />
+            <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}><AdminReportsPage /></ProtectedRoute>} />
+            <Route path="/admin/team" element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}><AdminTeamPage /></ProtectedRoute>} />
+            <Route path="/admin/employees" element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}><EmployeeManagementPage /></ProtectedRoute>} />
+            <Route path="/admin/roles" element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}><RoleManagementPage /></ProtectedRoute>} />
+            <Route path="/admin/events" element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}><AdminEventsPage /></ProtectedRoute>} />
+            <Route path="/admin/permissions" element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']}><PermissionRegistryPage /></ProtectedRoute>} />
+            <Route path="/events/:id/dashboard" element={<ProtectedRoute><EventDashboard /></ProtectedRoute>} />
+            
+            <Route path="/triager/dashboard" element={<ProtectedRoute allowedRoles={['TRIAGER', 'ADMIN', 'SUPER_ADMIN']}><TriagerDashboard /></ProtectedRoute>} />
+            
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            <Route path="/inbox" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
+            <Route path="/team-management" element={<ProtectedRoute><TeamManagementPage /></ProtectedRoute>} />
 
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/researchers" element={<AdminResearcherList />} />
-            <Route path="/admin/companies" element={<AdminCompanyList />} />
-            <Route path="/admin/triagers" element={<TriagersPage />} />
-            <Route path="/admin/logs" element={<AdminAuditLogs />} />
-            <Route path="/admin/approvals" element={<AdminApprovals />} />
-            <Route path="/admin/reports" element={<AdminReportsPage />} />
-            <Route path="/admin/team" element={<AdminTeamPage />} />
-            <Route path="/admin/employees" element={<EmployeeManagementPage />} />
-            <Route path="/admin/roles" element={<RoleManagementPage />} />
-            <Route path="/admin/events" element={<AdminEventsPage />} />
-            <Route path="/events/:id/dashboard" element={<EventDashboard />} />
-            
-            <Route path="/triager/dashboard" element={<TriagerDashboard />} />
-            
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/inbox" element={<InboxPage />} />
-            <Route path="/team-management" element={<TeamManagementPage />} />
-            <Route path="/admin/permissions" element={<PermissionRegistryPage />} />
             
             <Route path="/" element={
               <div className="dark flex flex-col items-center justify-center min-h-screen p-4 text-center bg-[hsl(var(--bg-main))] text-[hsl(var(--text-main))]">
