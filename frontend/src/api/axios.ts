@@ -41,6 +41,9 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       const refreshToken = localStorage.getItem('refreshToken');
       
+      // Do not redirect if the original request was to login
+      const isLoginRequest = originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/login');
+
       if (refreshToken) {
         try {
           const { data } = await api.post('/auth/refresh-token', { token: refreshToken });
@@ -50,6 +53,16 @@ api.interceptors.response.use(
         } catch (refreshError) {
           localStorage.removeItem('token');
           localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+          if (!isLoginRequest) {
+            window.location.href = '/login';
+          }
+        }
+      } else {
+        // No refresh token available, force logout
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        if (!isLoginRequest) {
           window.location.href = '/login';
         }
       }
